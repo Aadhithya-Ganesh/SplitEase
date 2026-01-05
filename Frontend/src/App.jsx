@@ -1,7 +1,7 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import LoginPage, { action as loginAction } from "./pages/LoginPage";
-import SignupPage from "./pages/SignupPage";
+import SignupPage, { action as signupAction } from "./pages/SignupPage";
 import HomePage from "./pages/HomePage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -12,6 +12,7 @@ import SidebarLayout from "./pages/SideBarLayout";
 import { loader as logoutLoader } from "./pages/Logout";
 import { ThemeProvider } from "./context/ThemeContext";
 import RootPage from "./pages/RootPage";
+import { Toaster } from "sonner";
 
 function App() {
   const router = createBrowserRouter([
@@ -31,6 +32,7 @@ function App() {
         {
           path: "Signup",
           element: <SignupPage />,
+          action: signupAction,
         },
         {
           path: "logout",
@@ -72,6 +74,7 @@ function App() {
   return (
     <ThemeProvider>
       <RouterProvider router={router} />
+      <Toaster richColors position="top-right" />
     </ThemeProvider>
   );
 }

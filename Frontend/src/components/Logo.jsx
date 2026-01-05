@@ -10,9 +10,11 @@ function Logo() {
           className="bg-primary rounded-lg p-2"
           whileHover={{ rotate: -10 }}
         >
-          <Receipt size={18} className="text-background" />
+          <Receipt className="text-background h-5 w-5 md:h-7 md:w-7" />
         </motion.div>
-        <p className="text-foreground text-xl font-bold">SplitEase</p>
+        <p className="text-foreground text-xl font-bold md:text-2xl">
+          SplitEase
+        </p>
       </div>
     </Link>
   );

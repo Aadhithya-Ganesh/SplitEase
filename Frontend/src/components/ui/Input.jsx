@@ -1,22 +1,53 @@
-import { cloneElement } from "react";
+import { cloneElement, createElement, useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 
-function Input({ className, icon, label, ...props }) {
-  const iconWithStyle = cloneElement(icon, {
-    className:
-      "text-muted-foreground absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2",
-  });
+function Input({
+  className = "",
+  icon,
+  label,
+  type = "text",
+  error,
+  ...props
+}) {
+  const [visible, setVisible] = useState(false);
+
+  const isPassword = type === "password";
+  const inputType = isPassword ? (visible ? "text" : "password") : type;
+
+  const leftIcon =
+    icon &&
+    cloneElement(icon, {
+      className:
+        "pointer-events-none text-muted-foreground absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2",
+    });
+
+  const rightIcon =
+    isPassword &&
+    createElement(visible ? EyeOff : Eye, {
+      className:
+        "absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-foreground transition-colors",
+      onClick: () => setVisible((v) => !v),
+    });
 
   return (
-    <div>
-      <label className="text-foreground text-sm font-bold">{label}</label>
+    <div className="space-y-1">
+      {label && (
+        <label className="text-foreground text-sm font-bold">{label}</label>
+      )}
+
       <div className="relative">
-        {iconWithStyle}
+        {leftIcon}
+        {rightIcon}
 
         <input
-          className={`${className} border-input text-foreground bg-background ring-offset-background file:text-foreground placeholder:text-muted-foreground focus-visible:ring-ring mt-3 flex h-12 w-full rounded-md border px-3 py-2 pl-10 text-base file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm`}
+          type={inputType}
+          className={`bg-background ${error ? "border-destructive" : "border-input"} text-foreground placeholder:text-muted-foreground ring-offset-background focus-visible:ring-ring mt-3 flex h-12 w-full rounded-md border px-3 py-2 pl-10 ${icon ? "pl-12" : ""} ${isPassword ? "pr-10" : ""} focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm ${className} `}
           {...props}
         />
       </div>
+      {error && (
+        <p className="text-destructive mt-2 ml-2 text-sm font-bold">{error}</p>
+      )}
     </div>
   );
 }

@@ -10,9 +10,14 @@ function Navbar({ mode }) {
       <Logo />
       <div className="flex items-center gap-2">
         <ThemeToggle />
+        <Link to="/login" className="hidden md:block">
+          <Button className="bg-secondary text-foreground hover:bg-accent hover:text-background w-full">
+            Sign In
+          </Button>
+        </Link>
         <Link to="/signup">
           <Button className="bg-primary border-none">
-            <p className="text-sm">Start</p>
+            <p>Start</p>
             <ArrowRight size={18} />
           </Button>
         </Link>

@@ -3,10 +3,28 @@ import { ArrowRight, Lock, Receipt, Mail } from "lucide-react";
 import { Form, Link } from "react-router-dom";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
+import { redirect } from "react-router-dom";
+import { toast } from "sonner";
+import useInput from "../hooks/useInput";
+import { validateEmail, validatePassword } from "../utils/FormValidation";
 
 function LoginPage() {
+  const {
+    value: emailValue,
+    handleChange: handleEmailChange,
+    handleBlur: handleEmailBlur,
+    error: emailError,
+  } = useInput("", validateEmail);
+
+  const {
+    value: passwordValue,
+    handleChange: handlePasswordChange,
+    handleBlur: handlePasswordBlur,
+    error: passwordError,
+  } = useInput("", validatePassword);
+
   return (
-    <div className="bg-background h-screen">
+    <div className="bg-background min-h-screen p-5">
       <div className="flex justify-end p-4">
         <ThemeToggle />
       </div>
@@ -29,9 +47,12 @@ function LoginPage() {
             type="email"
             name="email"
             label="Email"
+            value={emailValue}
+            error={emailError}
             icon={<Mail />}
             placeholder="you@example.com"
-            className="text-foreground mt-3 h-12 pl-10"
+            onChange={handleEmailChange}
+            onBlur={handleEmailBlur}
           />
 
           <Input
@@ -39,14 +60,18 @@ function LoginPage() {
             type="password"
             name="password"
             label="Password"
+            value={passwordValue}
+            error={passwordError}
             icon={<Lock />}
             placeholder="••••••••"
-            className=""
+            onChange={handlePasswordChange}
+            onBlur={handlePasswordBlur}
           />
 
           <Button
             type="submit"
-            className="bg-primary mt-4 w-full border-none text-white"
+            disabled={emailError || passwordError}
+            className="bg-primary mt-4 w-full border-none text-white disabled:opacity-50"
           >
             <p>Sign In</p>
             <ArrowRight size={15} />
@@ -67,7 +92,18 @@ export default LoginPage;
 
 export async function action({ request }) {
   const data = await request.formData();
-  console.log(request.method);
-  console.log(data.get("email"));
-  console.log(data.get("password"));
+
+  const authData = {
+    email: data.get("email"),
+    password: data.get("password"),
+  };
+
+  if (validateEmail(authData.email) || validatePassword(authData.password)) {
+    toast.error("Please fill the form");
+    return null;
+  }
+
+  toast.success("Logged in successfully!");
+
+  return redirect("/home");
 }
