@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 
-function Button({ children, className, disabled = true, ...props }) {
+function Button({ children, className, disabled = false, ...props }) {
   return (
     <motion.button
       disabled={disabled}

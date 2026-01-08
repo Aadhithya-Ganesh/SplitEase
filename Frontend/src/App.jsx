@@ -13,6 +13,8 @@ import { loader as logoutLoader } from "./pages/Logout";
 import { ThemeProvider } from "./context/ThemeContext";
 import RootPage from "./pages/RootPage";
 import { Toaster } from "sonner";
+import UserContextProvider from "./context/UserContext";
+import SidebarContextProvider from "./context/SidebarContext";
 
 function App() {
   const router = createBrowserRouter([
@@ -73,8 +75,12 @@ function App() {
 
   return (
     <ThemeProvider>
-      <RouterProvider router={router} />
-      <Toaster richColors position="top-right" />
+      <UserContextProvider>
+        <SidebarContextProvider>
+          <RouterProvider router={router} />
+          <Toaster richColors position="top-right" />
+        </SidebarContextProvider>
+      </UserContextProvider>
     </ThemeProvider>
   );
 }

@@ -5,7 +5,7 @@ import LandingPageContent from "../components/Landing/LandingPageContent";
 function LandingPage() {
   return (
     <>
-      <Navbar />
+      <Navbar mode="landing" />
       <LandingPageHeader />
       <LandingPageContent />
     </>

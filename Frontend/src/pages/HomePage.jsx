@@ -1,5 +1,7 @@
+import Navbar from "../components/Navbar";
+
 function HomePage() {
-  return <div>Home Page</div>;
+  return <div></div>;
 }
 
 export default HomePage;
