@@ -15,6 +15,9 @@ import RootPage from "./pages/RootPage";
 import { Toaster } from "sonner";
 import UserContextProvider from "./context/UserContext";
 import SidebarContextProvider from "./context/SidebarContext";
+import { loader as sidebarLoader } from "./components/Sidebar";
+import { action as joinGroupAction } from "./components/JoinGroup";
+import { action as createGroupAction } from "./components/CreateGroup";
 
 function App() {
   const router = createBrowserRouter([
@@ -42,6 +45,7 @@ function App() {
         },
         {
           element: <SidebarLayout />,
+          loader: sidebarLoader,
           children: [
             {
               path: "home",
@@ -68,6 +72,14 @@ function App() {
               element: <ScanBill />,
             },
           ],
+        },
+        {
+          path: "/join",
+          action: joinGroupAction,
+        },
+        {
+          path: "/create",
+          action: createGroupAction,
         },
       ],
     },

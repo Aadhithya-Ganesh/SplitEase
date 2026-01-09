@@ -7,6 +7,7 @@ function Input({
   label,
   type = "text",
   error,
+  info,
   ...props
 }) {
   const [visible, setVisible] = useState(false);
@@ -45,8 +46,15 @@ function Input({
           {...props}
         />
       </div>
+      {info && (
+        <p className="text-muted-foreground mt-2 ml-2 text-xs font-bold sm:text-sm">
+          {info}
+        </p>
+      )}
       {error && (
-        <p className="text-destructive mt-2 ml-2 text-sm font-bold">{error}</p>
+        <p className="text-destructive mt-2 ml-2 text-xs font-bold sm:text-sm">
+          {error}
+        </p>
       )}
     </div>
   );
