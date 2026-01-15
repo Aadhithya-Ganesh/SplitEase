@@ -18,6 +18,7 @@ import SidebarContextProvider from "./context/SidebarContext";
 import { loader as sidebarLoader } from "./components/Sidebar";
 import { action as joinGroupAction } from "./components/JoinGroup";
 import { action as createGroupAction } from "./components/CreateGroup";
+import GroupPage, { loader as groupPageLoader } from "./pages/GroupPage";
 
 function App() {
   const router = createBrowserRouter([
@@ -58,6 +59,11 @@ function App() {
             {
               path: "settings",
               element: <SettingsPage />,
+            },
+            {
+              path: "groups",
+              element: <GroupPage />,
+              loader: groupPageLoader,
             },
             {
               path: "group/:groupId",

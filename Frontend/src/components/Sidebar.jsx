@@ -131,7 +131,7 @@ function Sidebar({ navlist }) {
 
 export default Sidebar;
 
-export function loader() {
+export async function loader() {
   // Group list here
   const groups = [
     {
