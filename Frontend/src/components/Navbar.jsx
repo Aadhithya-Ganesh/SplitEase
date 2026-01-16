@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Form, Link } from "react-router-dom";
 import Logo from "./Logo.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
 import { ArrowRight } from "lucide-react";
@@ -47,11 +47,13 @@ function Navbar({ mode }) {
             {/* username here */}
             <p className="text-muted-foreground hidden md:block">hateios</p>
             <ThemeToggle />
-            <Link to="/logout">
-              <div className="text-foreground hover:bg-accent hidden cursor-pointer rounded-lg p-2 transition-colors md:block">
-                <LogOut size={20} />
-              </div>
-            </Link>
+            <Form action="/logout" method="post">
+              <button type="submit">
+                <div className="text-foreground hover:bg-accent hidden cursor-pointer rounded-lg p-2 transition-colors md:block">
+                  <LogOut size={20} />
+                </div>
+              </button>
+            </Form>
           </div>
         </div>
       )}

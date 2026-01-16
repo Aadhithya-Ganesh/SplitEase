@@ -39,7 +39,6 @@ function SidebarLayout() {
             animate={{ width: sidebarWidth }}
             exit={{ width: 0 }}
             transition={{ type: "spring", stiffness: 260, damping: 30 }}
-            className="hidden md:block md:w-1/3 lg:w-1/4"
           >
             <Sidebar navlist={navlist} />
           </motion.div>
@@ -52,7 +51,7 @@ function SidebarLayout() {
         className="bg-background flex flex-1 flex-col"
       >
         <Navbar mode="home" />
-        <div className="grow">
+        <div className="bg-background m-auto mb-20 w-full max-w-300 grow px-5 py-7 md:mb-0">
           <Outlet />
         </div>
       </motion.div>

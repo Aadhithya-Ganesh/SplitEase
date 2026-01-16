@@ -5,11 +5,13 @@ import SignupPage, { action as signupAction } from "./pages/SignupPage";
 import HomePage from "./pages/HomePage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import SettingsPage from "./pages/SettingsPage";
-import GroupDetails from "./pages/GroupDetails";
+import GroupDetails, {
+  loader as groupDetailsLoader,
+} from "./pages/GroupDetails";
 import BillDetails from "./pages/BillDetails";
 import ScanBill from "./pages/ScanBill";
 import SidebarLayout from "./pages/SideBarLayout";
-import { loader as logoutLoader } from "./pages/Logout";
+import { action as logoutAction } from "./pages/Logout";
 import { ThemeProvider } from "./context/ThemeContext";
 import RootPage from "./pages/RootPage";
 import { Toaster } from "sonner";
@@ -42,7 +44,7 @@ function App() {
         },
         {
           path: "logout",
-          loader: logoutLoader,
+          action: logoutAction,
         },
         {
           element: <SidebarLayout />,
@@ -66,8 +68,9 @@ function App() {
               loader: groupPageLoader,
             },
             {
-              path: "group/:groupId",
+              path: "groups/:groupId",
               element: <GroupDetails />,
+              loader: groupDetailsLoader,
             },
             {
               path: "bill/:billId",

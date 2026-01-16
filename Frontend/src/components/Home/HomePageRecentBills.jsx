@@ -11,7 +11,7 @@ function HomePageRecentBills({ bills }) {
 
       <div className="mt-5 flex flex-col gap-3">
         {bills.map((bill) => (
-          <RecentBillItem bill={bill} />
+          <RecentBillItem key={bill.id} bill={bill} />
         ))}
       </div>
     </div>

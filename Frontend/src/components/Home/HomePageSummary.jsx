@@ -9,7 +9,7 @@ function HomepageSummary() {
   };
 
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
       <HomePageSummaryCards
         icon={
           <div className="bg-primary/10 text-primary rounded-lg p-2">

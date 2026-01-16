@@ -44,7 +44,7 @@ const stats = {
 
 function HomePage() {
   return (
-    <section className="bg-background m-auto max-w-300 px-5 py-7">
+    <section>
       <p className="text-foreground mb-2 text-2xl font-bold md:text-4xl">
         Welcome back!
       </p>
