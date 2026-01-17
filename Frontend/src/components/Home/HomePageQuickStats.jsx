@@ -1,8 +1,10 @@
 function HomePageQuickStats({ stats }) {
   return (
     <div className="bg-card border-border mt-8 rounded-xl border p-5 md:p-10 lg:w-1/2">
-      <p className="text-card-foreground font-semibold">Quick Stats</p>
-      <div className="mt-5 flex flex-col gap-3">
+      <p className="text-card-foreground text-lg font-semibold md:text-xl">
+        Quick Stats
+      </p>
+      <div className="mt-5 flex flex-col gap-3 text-lg">
         <div className="bg-secondary/30 flex justify-between rounded-xl p-3 font-bold">
           <p className="text-muted-foreground">Total groups</p>
           <p className="text-foreground">{stats.groups}</p>

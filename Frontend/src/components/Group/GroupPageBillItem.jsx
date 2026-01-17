@@ -11,7 +11,7 @@ import { Link } from "react-router-dom";
 
 function GroupPageBillItem({ bill }) {
   return (
-    <Link to={`/bill/${bill.id}`}>
+    <Link to={`/bill/${bill.id}/review`}>
       <div className="bg-card border-border text-card-foreground hover:bg-card/20 flex cursor-pointer justify-between rounded-t-xl border p-5 transition-colors">
         <div className="mt-2">
           <Receipt />
@@ -25,7 +25,7 @@ function GroupPageBillItem({ bill }) {
           <p className="text-muted-foreground">by {bill.payee}</p>
         </div>
         <div className="text-right">
-          <p className="text-lg font-bold">${bill.total}</p>
+          <p className="text-lg font-bold">${bill.total.toFixed(2)}</p>
           <div className="text-muted-foreground flex items-center gap-2">
             <Clock size={15} />
             <p>{bill.pending} pending</p>

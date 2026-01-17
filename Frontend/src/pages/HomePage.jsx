@@ -17,7 +17,7 @@ const bills = [
     id: "bill_002",
     title: "Monthly Groceries",
     date: "2024-02-18",
-    status: "owed",
+    status: "owed_to_you",
     amount: 34.5,
     currency: "USD",
     direction: "outgoing",

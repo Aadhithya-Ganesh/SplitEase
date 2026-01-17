@@ -10,7 +10,7 @@ function HomePageSummaryCards({ icon, heading, children }) {
       <div className="mb-4 flex items-center gap-3">
         {/* div for the icon */}
         {icon}
-        <p className="text-muted-foreground text-sm">{heading}</p>
+        <p className="text-muted-foreground text-lg">{heading}</p>
       </div>
       <div className="flex items-center gap-2">{children}</div>
     </motion.div>

@@ -31,7 +31,7 @@ function Navbar({ mode }) {
         </div>
       )}
       {mode !== "landing" && (
-        <div className="bg-background border-border sticky top-0 flex w-full items-center justify-between border-b p-5">
+        <div className="bg-background border-border sticky top-0 z-100 flex w-full items-center justify-between border-b p-5">
           <div className="md:hidden">
             <Logo mode="home" />
           </div>
@@ -49,7 +49,7 @@ function Navbar({ mode }) {
             <ThemeToggle />
             <Form action="/logout" method="post">
               <button type="submit">
-                <div className="text-foreground hover:bg-accent hidden cursor-pointer rounded-lg p-2 transition-colors md:block">
+                <div className="text-foreground hover:bg-accent flex size-10 cursor-pointer items-center justify-center rounded-lg transition-colors">
                   <LogOut size={20} />
                 </div>
               </button>

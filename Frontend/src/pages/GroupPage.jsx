@@ -32,7 +32,9 @@ function GroupPage() {
   return (
     <div className="px-4">
       <div className="my-5 flex justify-between">
-        <p className="text-foreground text-2xl font-bold">Your Groups</p>
+        <p className="text-foreground text-2xl font-bold md:text-4xl">
+          Your Groups
+        </p>
         <div className="flex gap-5">
           <Button
             onClick={() => setJoinGroupModal(!joinGroupModal)}
@@ -75,22 +77,22 @@ function GroupPage() {
             >
               <Link
                 to={`/groups/${group.id}`}
-                className="border-border bg-card hover:bg-card/10 flex items-center gap-3 rounded-xl border p-4 transition-colors"
+                className="border-border bg-card hover:bg-card/10 flex items-center gap-3 rounded-xl border p-6 transition-colors"
               >
                 <div className="bg-primary/10 flex h-12 w-12 shrink-0 items-center justify-center rounded-full">
                   <Users className="text-primary h-6 w-6" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-foreground truncate font-medium">
+                  <h3 className="text-foreground truncate text-lg font-medium md:text-xl">
                     {group.name}
                   </h3>
-                  <p className="text-muted-foreground text-sm">
+                  <p className="text-muted-foreground text-xs md:text-base">
                     {group.members.length} members
                   </p>
                 </div>
                 <div className="shrink-0 text-right">
                   <div
-                    className={`flex items-center gap-1 text-sm font-medium ${
+                    className={`flex items-center gap-2 font-medium md:text-lg ${
                       group.outstandingBalance > 0
                         ? "text-primary"
                         : group.outstandingBalance < 0
@@ -99,13 +101,13 @@ function GroupPage() {
                     }`}
                   >
                     {group.outstandingBalance > 0 ? (
-                      <TrendingUp className="h-3.5 w-3.5" />
+                      <TrendingUp className="size-4 md:size-6" />
                     ) : group.outstandingBalance < 0 ? (
-                      <TrendingDown className="h-3.5 w-3.5" />
+                      <TrendingDown className="size-4 md:size-6" />
                     ) : null}
                     ${Math.abs(group.outstandingBalance).toFixed(2)}
                   </div>
-                  <p className="text-muted-foreground text-xs">
+                  <p className="text-muted-foreground text-sm md:text-base">
                     {group.outstandingBalance >= 0 ? "you get" : "you owe"}
                   </p>
                 </div>

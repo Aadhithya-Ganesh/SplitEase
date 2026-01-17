@@ -4,7 +4,7 @@ import { useContext } from "react";
 import { SidebarContext } from "../context/SidebarContext";
 import { AnimatePresence, motion } from "motion/react";
 import Navbar from "../components/Navbar";
-import { ChartColumn, Home, Settings } from "lucide-react";
+import { ChartColumn, Home, Settings, Users } from "lucide-react";
 import { useMediaQuery } from "react-responsive";
 
 function SidebarLayout() {
@@ -18,6 +18,10 @@ function SidebarLayout() {
     {
       icon: Home,
       page: "Home",
+    },
+    {
+      icon: Users,
+      page: "Groups",
     },
     {
       icon: ChartColumn,

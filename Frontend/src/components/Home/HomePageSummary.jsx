@@ -18,7 +18,9 @@ function HomepageSummary() {
         }
         heading={"You are owed"}
       >
-        <p className="text-primary text-xl font-bold">${info.owed}</p>
+        <p className="text-primary text-xl font-bold md:text-2xl">
+          ${info.owed}
+        </p>
       </HomePageSummaryCards>
       <HomePageSummaryCards
         icon={
@@ -28,7 +30,9 @@ function HomepageSummary() {
         }
         heading={"You owe"}
       >
-        <p className="text-destructive text-xl font-bold">${info.owe}</p>
+        <p className="text-destructive text-xl font-bold md:text-2xl">
+          ${info.owe}
+        </p>
       </HomePageSummaryCards>
       <HomePageSummaryCards
         icon={
@@ -41,7 +45,7 @@ function HomepageSummary() {
         heading={"Net balance"}
       >
         <p
-          className={`${info.owed - info.owe < 0 ? "text-destructive" : "text-primary"} text-xl font-bold`}
+          className={`${info.owed - info.owe < 0 ? "text-destructive" : "text-primary"} text-xl font-bold md:text-2xl`}
         >
           ${(info.owed - info.owe).toFixed(2)}
         </p>
@@ -54,7 +58,7 @@ function HomepageSummary() {
         }
         heading={"Pending"}
       >
-        <p className="text-xl font-bold">{info.settlements}</p>
+        <p className="text-xl font-bold md:text-2xl">{info.settlements}</p>
         <span>settlements</span>
       </HomePageSummaryCards>
     </div>

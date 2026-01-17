@@ -8,7 +8,7 @@ import SettingsPage from "./pages/SettingsPage";
 import GroupDetails, {
   loader as groupDetailsLoader,
 } from "./pages/GroupDetails";
-import BillDetails from "./pages/BillDetails";
+import BillDetails, { loader as billDetailsLoader } from "./pages/BillDetails";
 import ScanBill from "./pages/ScanBill";
 import SidebarLayout from "./pages/SideBarLayout";
 import { action as logoutAction } from "./pages/Logout";
@@ -21,6 +21,8 @@ import { loader as sidebarLoader } from "./components/Sidebar";
 import { action as joinGroupAction } from "./components/JoinGroup";
 import { action as createGroupAction } from "./components/CreateGroup";
 import GroupPage, { loader as groupPageLoader } from "./pages/GroupPage";
+import BillSplit from "./pages/BillSplit";
+import NotFound from "./pages/NotFound";
 
 function App() {
   const router = createBrowserRouter([
@@ -73,8 +75,13 @@ function App() {
               loader: groupDetailsLoader,
             },
             {
-              path: "bill/:billId",
+              path: "bill/:billId/review",
               element: <BillDetails />,
+              loader: billDetailsLoader,
+            },
+            {
+              path: "bill/:billId/split",
+              element: <BillSplit />,
             },
             {
               path: "scan",
@@ -89,6 +96,10 @@ function App() {
         {
           path: "/create",
           action: createGroupAction,
+        },
+        {
+          path: "*",
+          element: <NotFound />,
         },
       ],
     },

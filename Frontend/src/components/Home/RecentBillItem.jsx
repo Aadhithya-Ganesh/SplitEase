@@ -35,18 +35,18 @@ function RecentBillItem({ bill }) {
   return (
     <motion.div whileHover={{ x: 10 }} whileTap={{ scale: 0.95 }}>
       <Link
-        to={`/bill/${bill.id}`}
+        to={`/bill/${bill.id}/review`}
         className="hover:bg-muted/40 flex cursor-pointer items-center justify-between rounded-lg px-5 py-3 transition"
       >
         {/* Left */}
         <div className="flex items-center gap-3">
           <div className={`rounded-xl p-3 ${styles.container}`}>
-            <Icon size={18} />
+            <Icon className="size-5 md:size-7" />
           </div>
 
           <div>
-            <p className="text-foreground font-semibold">{title}</p>
-            <p className="text-muted-foreground text-xs">
+            <p className="text-foreground font-semibold md:text-lg">{title}</p>
+            <p className="text-muted-foreground text-sm md:text-base">
               {new Date(date).toLocaleDateString("en-US", {
                 month: "short",
                 day: "2-digit",
@@ -60,17 +60,21 @@ function RecentBillItem({ bill }) {
         <div className="text-right">
           {status === "settled" ? (
             <>
-              <p className="text-foreground font-semibold">All settled</p>
-              <p className="text-muted-foreground text-xs">
+              <p className="text-foreground font-semibold md:text-lg">
+                All settled
+              </p>
+              <p className="text-muted-foreground text-sm md:text-base">
                 Total: ${totalAmount.toFixed(2)}
               </p>
             </>
           ) : (
             <>
-              <p className={`font-semibold ${styles.text}`}>
+              <p className={`font-semibold ${styles.text} md:text-lg`}>
                 {direction === "outgoing" ? "-" : "+"}${amount.toFixed(2)}
               </p>
-              <p className="text-muted-foreground text-xs">{styles.label}</p>
+              <p className="text-muted-foreground text-sm md:text-base">
+                {styles.label}
+              </p>
             </>
           )}
         </div>
