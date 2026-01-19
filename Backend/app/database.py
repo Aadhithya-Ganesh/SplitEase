@@ -1,12 +1,19 @@
 import os
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
-from app.models.model import Base
+from sqlalchemy.orm import sessionmaker, declarative_base
 import logging
 
 logger = logging.getLogger(__name__)
 
-url = os.getenv("DATABASE_URL")
+Base = declarative_base()
+
+USER = os.getenv("USER")
+PASSWORD = os.getenv("PASSWORD")
+HOST = os.getenv("HOST")
+PORT = os.getenv("PORT")
+DBNAME = os.getenv("DBNAME")
+
+url = f"postgresql+psycopg2://{USER}:{PASSWORD}@{HOST}:{PORT}/{DBNAME}?sslmode=require"
 
 engine = create_engine(
     url,
@@ -30,6 +37,7 @@ def get_db():
         db.close()
 
 def init_db():
+    from app.models import user
     try:
         logger.info("Creating database tables...")
         Base.metadata.create_all(bind=engine)

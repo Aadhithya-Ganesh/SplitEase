@@ -1,36 +1,46 @@
 import logging
-import asyncio
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi.security import OAuth2PasswordBearer
+from app.routes.auth import router as auth_router
+from app.routes.bill import router as bill_router
+
+from app.database import init_db, get_db_health
 
 logging.basicConfig(
     level=logging.INFO,
-    format=f'%(asctime)s - RideService - %(levelname)s - %(message)s'
+    format="%(asctime)s - SplitEase 2026 - %(levelname)s - %(message)s",
 )
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 🔹 STARTUP
+    logger.info("Starting SplitEase API...")
+    init_db()
 
-# @app.on_event("startup")
-# async def startup_event():
-#     init_db()
+    yield 
 
-# @app.get("/health")
-# async def health_check():
-#     """Health check endpoint - used by load balancer"""
-#     db_health = get_db_health()
-    
-#     is_healthy = (
-#         db_health["status"] == "connected" 
-#     )
-    
-#     return {
-#         "status": "healthy" if is_healthy else "unhealthy",
-#         "checks": {
-#             "database": db_health["status"],
-#         }
-#     }
+    # 🔹 SHUTDOWN
+    logger.info("Shutting down SplitEase API...")
 
-@app.get("/")
-async def root():
-    return {"message": "Welcome to SplitEase API"}
+
+app = FastAPI(lifespan=lifespan)
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint - used by load balancer"""
+    db_health = get_db_health()
+
+    is_healthy = db_health["status"] == "connected"
+
+    return {
+        "status": "healthy" if is_healthy else "unhealthy",
+        "checks": {
+            "database": db_health["status"],
+        },
+    }
+
+app.include_router(auth_router)
+app.include_router(bill_router)
