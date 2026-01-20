@@ -4,6 +4,8 @@ import Button from "./ui/Button";
 import { ArrowRight, Plus } from "lucide-react";
 import { useFetcher } from "react-router-dom";
 import { useEffect } from "react";
+import BackdropLoader from "./../utils/BackdropLoader";
+import { apiFetch } from "./../utils/Fetch";
 
 function CreateGroup({ onSuccess }) {
   const {
@@ -39,9 +41,14 @@ function CreateGroup({ onSuccess }) {
         type="submit"
         className="bg-primary mt-6 w-full border-none text-white disabled:opacity-50"
       >
-        <p>Create Group</p>
+        <p>
+          {fetcher.state === "submitting"
+            ? "Creating Group..."
+            : "Create Group"}
+        </p>
         <ArrowRight size={15} />
       </Button>
+      {fetcher.state === "submitting" && <BackdropLoader />}
     </fetcher.Form>
   );
 }
@@ -51,7 +58,16 @@ export default CreateGroup;
 export async function action({ request }) {
   const data = await request.formData();
 
-  console.log(data);
+  const groupName = data.get("groupName");
 
-  return data;
+  const response = await apiFetch(`/api/groups/create_group`, {
+    method: "POST",
+    body: {
+      name: groupName,
+    },
+  });
+
+  const createData = await response.json();
+
+  return createData;
 }

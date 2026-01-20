@@ -10,47 +10,47 @@ import GroupDetails, {
 } from "./pages/GroupDetails";
 import BillDetails, { loader as billDetailsLoader } from "./pages/BillDetails";
 import ScanBill from "./pages/ScanBill";
-import SidebarLayout from "./pages/SideBarLayout";
-import { action as logoutAction } from "./pages/Logout";
+import NavbarLayout from "./pages/NavbarLayout";
 import { ThemeProvider } from "./context/ThemeContext";
 import RootPage from "./pages/RootPage";
 import { Toaster } from "sonner";
 import UserContextProvider from "./context/UserContext";
-import SidebarContextProvider from "./context/SidebarContext";
-import { loader as sidebarLoader } from "./components/Sidebar";
 import { action as joinGroupAction } from "./components/JoinGroup";
 import { action as createGroupAction } from "./components/CreateGroup";
+import { action as updateGroupAction } from "./components/UpdateGroup";
 import GroupPage, { loader as groupPageLoader } from "./pages/GroupPage";
 import BillSplit from "./pages/BillSplit";
 import NotFound from "./pages/NotFound";
+import { unAuthLoader } from "./pages/Auth";
 
 function App() {
   const router = createBrowserRouter([
     {
       path: "/",
       element: <RootPage />,
+      errorElement: <NotFound />,
       children: [
         {
-          path: "",
-          element: <LandingPage />,
+          loader: unAuthLoader,
+          children: [
+            {
+              path: "",
+              element: <LandingPage />,
+            },
+            {
+              path: "login",
+              element: <LoginPage />,
+              action: loginAction,
+            },
+            {
+              path: "Signup",
+              element: <SignupPage />,
+              action: signupAction,
+            },
+          ],
         },
         {
-          path: "login",
-          element: <LoginPage />,
-          action: loginAction,
-        },
-        {
-          path: "Signup",
-          element: <SignupPage />,
-          action: signupAction,
-        },
-        {
-          path: "logout",
-          action: logoutAction,
-        },
-        {
-          element: <SidebarLayout />,
-          loader: sidebarLoader,
+          element: <NavbarLayout />,
           children: [
             {
               path: "home",
@@ -98,8 +98,8 @@ function App() {
           action: createGroupAction,
         },
         {
-          path: "*",
-          element: <NotFound />,
+          path: "groups/:groupId/update",
+          action: updateGroupAction,
         },
       ],
     },
@@ -108,10 +108,8 @@ function App() {
   return (
     <ThemeProvider>
       <UserContextProvider>
-        <SidebarContextProvider>
-          <RouterProvider router={router} />
-          <Toaster richColors position="top-right" />
-        </SidebarContextProvider>
+        <RouterProvider router={router} />
+        <Toaster richColors position="top-right" />
       </UserContextProvider>
     </ThemeProvider>
   );

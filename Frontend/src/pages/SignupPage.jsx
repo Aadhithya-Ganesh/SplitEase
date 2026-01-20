@@ -1,6 +1,6 @@
 import { ThemeToggle } from "../components/ThemeToggle";
 import { ArrowRight, Lock, Receipt, Mail, User } from "lucide-react";
-import { Form, Link } from "react-router-dom";
+import { Form, Link, useNavigation } from "react-router-dom";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
 import { redirect } from "react-router-dom";
@@ -12,6 +12,8 @@ import {
   validateFullName,
 } from "../utils/FormValidation";
 import { toast } from "sonner";
+import BackdropLoader from "../utils/BackdropLoader";
+import { apiFetch } from "../utils/Fetch";
 
 function SignupPage() {
   const {
@@ -41,6 +43,8 @@ function SignupPage() {
     handleBlur: handleConfirmPasswordBlur,
     error: confirmPasswordError,
   } = useInput("", (value) => validateConfirmPassword(passwordValue, value));
+
+  const state = useNavigation();
 
   return (
     <div>
@@ -130,6 +134,7 @@ function SignupPage() {
           </Form>
         </div>
       </div>
+      {state.state === "submitting" && <BackdropLoader />}
     </div>
   );
 }
@@ -140,25 +145,26 @@ export async function action({ request }) {
   const data = await request.formData();
 
   const authData = {
-    name: data.get("name"),
+    fullname: data.get("name"),
     email: data.get("email"),
     password: data.get("password"),
-    confirmPassword: data.get("confirmPassword"),
   };
-
-  console.log(authData);
 
   if (
     validateEmail(authData.email) ||
     validatePassword(authData.password) ||
-    validateFullName(authData.name) ||
-    validateConfirmPassword(authData.confirmPassword, authData.password)
+    validateFullName(authData.fullname)
   ) {
     toast.error("Please fill the form");
     return null;
   }
 
-  toast.success("Signup successfull!");
+  const response = await apiFetch("/auth/signup", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: authData,
+  });
 
+  toast.success("Signup successful!");
   return redirect("/login");
 }

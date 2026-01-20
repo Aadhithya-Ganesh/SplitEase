@@ -1,12 +1,14 @@
 import { ThemeToggle } from "../components/ThemeToggle";
 import { ArrowRight, Lock, Receipt, Mail } from "lucide-react";
-import { Form, Link } from "react-router-dom";
+import { Form, Link, useNavigation } from "react-router-dom";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
 import { redirect } from "react-router-dom";
 import { toast } from "sonner";
 import useInput from "../hooks/useInput";
 import { validateEmail, validatePassword } from "../utils/FormValidation";
+import BackdropLoader from "./../utils/BackdropLoader";
+import { apiFetch } from "./../utils/Fetch";
 
 function LoginPage() {
   const {
@@ -22,6 +24,8 @@ function LoginPage() {
     handleBlur: handlePasswordBlur,
     error: passwordError,
   } = useInput("", validatePassword);
+
+  const state = useNavigation();
 
   return (
     <div>
@@ -86,6 +90,7 @@ function LoginPage() {
           </Form>
         </div>
       </div>
+      {state.state === "submitting" && <BackdropLoader />}
     </div>
   );
 }
@@ -95,17 +100,37 @@ export default LoginPage;
 export async function action({ request }) {
   const data = await request.formData();
 
-  const authData = {
-    email: data.get("email"),
-    password: data.get("password"),
-  };
+  const username = data.get("email");
+  const password = data.get("password");
 
-  if (validateEmail(authData.email) || validatePassword(authData.password)) {
-    toast.error("Please fill the form");
-    return null;
+  if (validateEmail(username) || validatePassword(password)) {
+    throw new Response(JSON.stringify({ message: "Invalid credentials" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
-  toast.success("Logged in successfully!");
+  const formBody = new URLSearchParams();
+  formBody.append("username", username);
+  formBody.append("password", password);
+
+  console.log(formBody);
+
+  const response = await apiFetch("/auth/login", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: formBody,
+  });
+
+  const tokenData = await response.json();
+
+  // store token
+  localStorage.setItem("token", tokenData.access_token);
+  window.location.href = "/home";
+
+  toast.success("Login Successful");
 
   return redirect("/home");
 }

@@ -1,9 +1,11 @@
 import Input from "./ui/Input";
 import useInput from "./../hooks/useInput";
 import Button from "./ui/Button";
-import { ArrowRight, User, UserPlus } from "lucide-react";
+import { ArrowRight, UserPlus } from "lucide-react";
 import { useFetcher } from "react-router-dom";
 import { useEffect } from "react";
+import BackdropLoader from "../utils/BackdropLoader";
+import { apiFetch } from "../utils/Fetch";
 
 function JoinGroup({ onSuccess }) {
   const {
@@ -42,6 +44,7 @@ function JoinGroup({ onSuccess }) {
         <p>{fetcher.state === "submitting" ? "Joining..." : "Join Group"}</p>
         <ArrowRight size={15} />
       </Button>
+      {fetcher.state === "submitting" && <BackdropLoader />}
     </fetcher.Form>
   );
 }
@@ -51,7 +54,13 @@ export default JoinGroup;
 export async function action({ request }) {
   const data = await request.formData();
 
-  console.log(data.get("groupId"));
+  const groupId = data.get("groupId");
 
-  return data;
+  const response = await apiFetch(`/api/groups/join_group/${groupId}`, {
+    method: "POST",
+  });
+
+  const joinData = await response.json();
+
+  return joinData;
 }
