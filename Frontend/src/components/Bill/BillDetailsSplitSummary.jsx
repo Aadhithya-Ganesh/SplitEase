@@ -1,24 +1,35 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useContext } from "react";
 import { User } from "lucide-react";
 import BillDetailsMembersSplit from "./BillDetailsMembersSplit";
+import { UserContext } from "../../context/UserContext";
 
 function BillDetailsSplitSummary({ members, payee }) {
-  const user = "Aadhithya Ganesh";
   const [memberList, setMemberList] = useState(members);
+  const { user } = useContext(UserContext);
 
-  const isUser = payee === user;
+  const isUser = payee.id === user?.id;
 
   const amount = useMemo(() => {
     if (isUser) {
-      // You paid → others owe you
+      // You paid → others still owe you
       return memberList
-        .filter((m) => m.pending && m.name !== user)
-        .reduce((sum, m) => sum + m.split, 0);
+        .filter((m) => !m.is_paid && m.id !== user.id)
+        .reduce((sum, m) => sum + m.amount, 0);
     }
 
-    // Someone else paid → your share
-    return memberList.find((m) => m.name === user)?.split ?? 0;
-  }, [memberList, isUser]);
+    // Someone else paid → your share (fixed value)
+    return memberList.find((m) => m.id === user.id)?.amount ?? 0;
+  }, [memberList, isUser, user.id]);
+
+  const myMember = members.find((m) => m.id === user?.id);
+
+  // for non-payee
+  const iHavePaid = myMember?.is_paid;
+
+  // for payee: check if everyone else has paid
+  const everyonePaid = members
+    .filter((m) => m.role !== "payer")
+    .every((m) => m.is_paid);
 
   return (
     <div className="bg-card border-border flex flex-col gap-4 rounded-xl border px-5 py-8">
@@ -27,20 +38,22 @@ function BillDetailsSplitSummary({ members, payee }) {
         <p className="text-lg md:text-xl">Split Summary</p>
       </div>
       <div
-        className={`p-5 ${isUser ? "text-primary border-primary/20 bg-primary/10" : "text-destructive border-destructive/20 bg-destructive/10"} rounded-xl border`}
+        className={`p-5 ${isUser ? "text-primary border-primary/20 bg-primary/10" : iHavePaid ? "text-foreground border-foreground/20 bg-foreground/10" : "text-destructive border-destructive/20 bg-destructive/10"} rounded-xl border`}
       >
         <p className="text-muted-foreground">
           {isUser ? "You Paid this Bill" : "Your Share"}
         </p>
         <div className="mt-1 flex items-center justify-between">
           <p className="text-xl font-bold">
-            {isUser && "You are owed "}${amount.toFixed(2)}
+            {isUser ? "You are owed $" : iHavePaid ? "You owed $" : "You owe $"}
+            {amount.toFixed(2)}
           </p>
+
           {!isUser && (
             <p
-              className={`${isUser ? "bg-primary/10" : "bg-destructive/10"} rounded-2xl px-3 py-1 text-sm`}
+              className={`rounded-2xl px-3 py-1 text-sm ${isUser ? "bg-primary/10" : iHavePaid ? "bg-foreground/10" : "bg-destructive/10"}`}
             >
-              pending
+              {iHavePaid ? "Settled" : "Pending"}
             </p>
           )}
         </div>

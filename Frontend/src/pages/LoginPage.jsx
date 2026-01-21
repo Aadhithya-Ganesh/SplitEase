@@ -114,8 +114,6 @@ export async function action({ request }) {
   formBody.append("username", username);
   formBody.append("password", password);
 
-  console.log(formBody);
-
   const response = await apiFetch("/auth/login", {
     method: "POST",
     headers: {

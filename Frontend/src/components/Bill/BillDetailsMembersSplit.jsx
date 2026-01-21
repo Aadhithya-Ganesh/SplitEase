@@ -1,61 +1,75 @@
 import { CircleCheck, Clock } from "lucide-react";
-import CustomCheckbox from "./../ui/CustomCheckbox";
+import CustomCheckbox from "../ui/CustomCheckbox";
+import { useContext } from "react";
+import { UserContext } from "../../context/UserContext";
 
-function BillDetailsMembersSplit({ members, payee, setMembers, isUserPayee }) {
-  const user = "Aadhithya Ganesh";
+function BillDetailsMembersSplit({ members, setMembers, isUserPayee }) {
+  const { user } = useContext(UserContext);
 
   function toggleSettled(id) {
     setMembers((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, pending: !m.pending } : m)),
+      prev.map((m) => (m.id === id ? { ...m, is_paid: !m.is_paid } : m)),
     );
   }
 
   return (
-    <ul className="flex flex-col gap-5">
-      {members.map((member) => (
-        <li
-          key={member.id}
-          className="bg-muted/30 flex items-center gap-5 rounded-xl p-3"
-        >
-          <div className="bg-primary/10 text-primary flex size-10 items-center justify-center rounded-full">
-            {member.name[0]}
-          </div>
+    <ul className="flex flex-col gap-4">
+      {members.map((member) => {
+        const isYou = member.id === user?.id;
+        const isPayee = member.role === "payer";
+        const isSettled = member.is_paid;
 
-          <div className="flex-1">
-            <p className="text-foreground font-bold">
-              {member.name === user ? "You" : member.name}
-            </p>
-            <p className="text-muted-foreground">${member.split.toFixed(2)}</p>
-          </div>
-
-          {/* PAYEE LABEL */}
-          {member.payee && (
-            <div className="text-primary flex items-center gap-1">
-              <CircleCheck size={18} />
-              <p>Payee</p>
+        return (
+          <li
+            key={member.id}
+            className="bg-muted/30 flex items-center gap-4 rounded-xl p-3"
+          >
+            {/* Avatar */}
+            <div className="bg-primary/10 text-primary flex size-10 items-center justify-center rounded-full font-semibold">
+              {member.name[0]}
             </div>
-          )}
 
-          {/* CHECKBOX ONLY IF YOU ARE PAYEE & NOT YOURSELF */}
-          {isUserPayee && !member.payee && (
-            <CustomCheckbox
-              checked={!member.pending}
-              onChange={() => toggleSettled(member.id)}
-              label={member.pending ? "Mark as settled" : "Settled"}
-            />
-          )}
-
-          {/* STATUS IF YOU ARE NOT PAYEE */}
-          {!isUserPayee && !member.payee && (
-            <div
-              className={`${member.pending ? "text-muted-foreground" : "text-primary"} flex items-center gap-1`}
-            >
-              {member.pending ? <Clock size={18} /> : <CircleCheck size={18} />}
-              <p>{member.pending ? "Pending" : "Settled"}</p>
+            {/* Name & amount */}
+            <div className="flex-1">
+              <p className="text-foreground font-semibold">
+                {isYou ? "You" : member.name}
+              </p>
+              <p className="text-muted-foreground text-sm">
+                ${member.amount.toFixed(2)}
+              </p>
             </div>
-          )}
-        </li>
-      ))}
+
+            {/* PAYEE BADGE */}
+            {isPayee && (
+              <div className="text-primary flex items-center gap-1 text-sm font-medium">
+                <CircleCheck size={16} />
+                Payee
+              </div>
+            )}
+
+            {/* PAYEE CONTROLS (only for others) */}
+            {isUserPayee && !isPayee && (
+              <CustomCheckbox
+                checked={isSettled}
+                onChange={() => toggleSettled(member.id)}
+                label={isSettled ? "Settled" : "Pending"}
+              />
+            )}
+
+            {/* READ-ONLY STATUS (non-payee view) */}
+            {!isUserPayee && !isPayee && (
+              <div
+                className={`flex items-center gap-1 text-sm ${
+                  !isSettled ? "text-muted-foreground" : "text-primary"
+                }`}
+              >
+                {isSettled ? <CircleCheck size={16} /> : <Clock size={16} />}
+                <p>{isSettled ? "Settled" : "Pending"}</p>
+              </div>
+            )}
+          </li>
+        );
+      })}
     </ul>
   );
 }

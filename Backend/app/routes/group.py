@@ -27,42 +27,58 @@ async def get_groups_of_user(
     user: Annotated[Users, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ):
-    query = (
+    members_subq = (
+        db.query(
+            UserGroup.group_id,
+            func.count(UserGroup.user_id).label("members_count"),
+        )
+        .group_by(UserGroup.group_id)
+        .subquery()
+    )
+
+    groups = (
         db.query(
             Group.id.label("id"),
             Group.name.label("name"),
-            # count ALL members in the group
-            func.count(func.distinct(UserGroup.user_id)).label("members_count"),
-            # balance ONLY for current user
+            Group.created_by.label("created_by"),
+            members_subq.c.members_count,
             func.coalesce(
                 func.sum(
                     case(
-                        (Bill.paid_by == user.id, BillSplit.amount),
-                        else_=-BillSplit.amount,
+                        (
+                            (Bill.paid_by == user.id)
+                            & (BillSplit.user_id != user.id)
+                            & (BillSplit.is_paid == False),
+                            BillSplit.amount,
+                        ),
+                        (
+                            (Bill.paid_by != user.id)
+                            & (BillSplit.user_id == user.id)
+                            & (BillSplit.is_paid == False),
+                            -BillSplit.amount,
+                        ),
+                        else_=0,
                     )
                 ),
                 0,
             ).label("balance"),
         )
-        # group membership
+        .select_from(Group)
+        # membership check (does NOT affect count)
         .join(UserGroup, UserGroup.group_id == Group.id)
-        # ensure current user is part of the group
-        .filter(
-            Group.id.in_(
-                db.query(UserGroup.group_id).filter(UserGroup.user_id == user.id)
-            )
-        )
-        # bills & splits
+        .join(members_subq, members_subq.c.group_id == Group.id)
         .outerjoin(Bill, Bill.group_id == Group.id)
-        .outerjoin(
-            BillSplit,
-            (BillSplit.bill_id == Bill.id)
-            & (BillSplit.user_id == user.id),  # 🔑 limit balance calc only
+        .outerjoin(BillSplit, BillSplit.bill_id == Bill.id)
+        .filter(UserGroup.user_id == user.id)
+        .group_by(
+            Group.id,
+            Group.name,
+            Group.created_by,
+            members_subq.c.members_count,
         )
-        .group_by(Group.id)
     )
 
-    return query.all()
+    return groups.all()
 
 
 @router.post("/create_group", response_model=GroupResponse)
@@ -128,9 +144,12 @@ async def get_group_by_id(
     db: Annotated[Session, Depends(get_db)],
     group_id: UUID,
 ):
+    # -----------------------------
+    # 1. Check access
+    # -----------------------------
     group = (
         db.query(Group)
-        .join(UserGroup)
+        .join(UserGroup, UserGroup.group_id == Group.id)
         .filter(
             Group.id == group_id,
             UserGroup.user_id == user.id,
@@ -141,33 +160,56 @@ async def get_group_by_id(
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
 
-    group_summary = (
+    # -----------------------------
+    # 2. Members count
+    # -----------------------------
+    members_count = (
+        db.query(func.count(UserGroup.user_id))
+        .filter(UserGroup.group_id == group_id)
+        .scalar()
+    )
+
+    # -----------------------------
+    # 3. Bills count
+    # -----------------------------
+    bills_count = (
+        db.query(func.count(Bill.id)).filter(Bill.group_id == group_id).scalar()
+    )
+
+    # -----------------------------
+    # 4. Group balance (FIXED)
+    # -----------------------------
+    balance = (
         db.query(
-            Group.id,
-            Group.name,
-            func.count(func.distinct(UserGroup.user_id)).label("members_count"),
-            func.count(func.distinct(Bill.id)).label("bills_count"),
             func.coalesce(
                 func.sum(
                     case(
-                        (Bill.paid_by == user.id, BillSplit.amount),
-                        else_=-BillSplit.amount,
+                        (
+                            (Bill.paid_by == user.id)
+                            & (BillSplit.user_id != user.id)
+                            & (BillSplit.is_paid == False),
+                            BillSplit.amount,
+                        ),
+                        (
+                            (Bill.paid_by != user.id)
+                            & (BillSplit.user_id == user.id)
+                            & (BillSplit.is_paid == False),
+                            -BillSplit.amount,
+                        ),
                     )
                 ),
                 0,
-            ).label("balance"),
+            )
         )
-        .join(UserGroup, UserGroup.group_id == Group.id)
-        .outerjoin(Bill, Bill.group_id == Group.id)
-        .outerjoin(
-            BillSplit,
-            (BillSplit.bill_id == Bill.id) & (BillSplit.user_id == user.id),
-        )
-        .filter(Group.id == group_id)
-        .group_by(Group.id)
-        .first()
+        .select_from(Bill)  # 🔥 REQUIRED
+        .join(BillSplit, BillSplit.bill_id == Bill.id)
+        .filter(Bill.group_id == group_id)
+        .scalar()
     )
 
+    # -----------------------------
+    # 5. Bills list
+    # -----------------------------
     bills = (
         db.query(
             Bill.id,
@@ -179,13 +221,24 @@ async def get_group_by_id(
             func.coalesce(
                 func.sum(
                     case(
-                        (Bill.paid_by == user.id, BillSplit.amount),
-                        else_=-BillSplit.amount,
+                        (
+                            (Bill.paid_by == user.id)
+                            & (BillSplit.user_id != user.id)
+                            & (BillSplit.is_paid == False),
+                            BillSplit.amount,
+                        ),
+                        (
+                            (Bill.paid_by != user.id)
+                            & (BillSplit.user_id == user.id)
+                            & (BillSplit.is_paid == False),
+                            -BillSplit.amount,
+                        ),
                     )
                 ),
                 0,
             ).label("user_balance"),
         )
+        .select_from(Bill)  # 🔥 ALSO REQUIRED
         .join(Users, Users.id == Bill.paid_by)
         .join(BillSplit, BillSplit.bill_id == Bill.id)
         .filter(Bill.group_id == group_id)
@@ -194,11 +247,11 @@ async def get_group_by_id(
     )
 
     return {
-        "id": group_summary.id,  # type: ignore
-        "name": group_summary.name,  # type: ignore
-        "members_count": group_summary.members_count,  # type: ignore
-        "bills_count": group_summary.bills_count,  # type: ignore
-        "balance": group_summary.balance,  # type: ignore
+        "id": group.id,
+        "name": group.name,
+        "members_count": members_count,
+        "bills_count": bills_count,
+        "balance": balance,
         "bills": bills,
     }
 

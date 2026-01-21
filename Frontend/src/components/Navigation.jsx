@@ -24,7 +24,7 @@ function Navigation() {
               to={item.path}
               key={index}
               className={({ isActive }) =>
-                `mx-2 rounded-lg p-2 ${
+                `mx-2 rounded-lg p-2 px-3 ${
                   isActive ? "bg-sidebar-accent" : "hover:bg-sidebar-accent"
                 }`
               }

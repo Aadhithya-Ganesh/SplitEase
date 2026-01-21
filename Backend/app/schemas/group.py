@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from uuid import UUID
 from datetime import datetime
-from typing import List, Literal
+from typing import List
 
 # =========================
 # CREATE / BASIC RESPONSES
@@ -41,6 +41,7 @@ class GroupListItem(BaseModel):
     name: str
     members_count: int
     balance: float  # +ve → you get, -ve → you owe
+    created_by: UUID
 
     class Config:
         from_attributes = True
@@ -59,7 +60,6 @@ class GroupBillItem(BaseModel):
     paid_by: str
     pending_count: int
     user_balance: float
-    status: Literal["YOU_OWE", "YOU_GET", "SETTLED"]
 
 
 class GroupDetailResponse(BaseModel):

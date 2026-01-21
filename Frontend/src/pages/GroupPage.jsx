@@ -2,13 +2,14 @@ import { Await, useLoaderData } from "react-router-dom";
 import Button from "../components/ui/Button";
 import {
   ChevronRight,
+  Crown,
   Plus,
   TrendingDown,
   TrendingUp,
   UserPlus,
   Users,
 } from "lucide-react";
-import { Suspense, useState } from "react";
+import { Suspense, useContext, useState } from "react";
 import Modal from "../components/ui/Modal";
 import JoinGroup from "../components/JoinGroup";
 import CreateGroup from "../components/CreateGroup";
@@ -17,9 +18,11 @@ import { Link } from "react-router-dom";
 import { apiFetch } from "./../utils/Fetch";
 import BackdropLoader from "./../utils/BackdropLoader";
 import NothingYet from "../components/ui/NothingYet";
+import { UserContext } from "./../context/UserContext";
 
 function GroupPage() {
   const { groups } = useLoaderData();
+  const { user } = useContext(UserContext);
 
   const [createGroupModal, setCreateGroupModal] = useState(false);
   const [joinGroupModal, setJoinGroupModal] = useState(false);
@@ -73,7 +76,7 @@ function GroupPage() {
                     key={group.id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    whileHover={{ scale: 1.05 }}
+                    whileHover={{ scale: 1.03 }}
                     transition={{ delay: index * 0.05 }}
                   >
                     <Link
@@ -84,8 +87,11 @@ function GroupPage() {
                         <Users className="text-primary h-6 w-6" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h3 className="text-foreground truncate text-lg font-medium md:text-xl">
+                        <h3 className="text-foreground flex items-center gap-3 truncate text-lg font-medium md:text-xl">
                           {group.name}
+                          {group.created_by === user?.id && (
+                            <Crown className="size-5 text-yellow-400" />
+                          )}
                         </h3>
                         <p className="text-muted-foreground text-xs md:text-base">
                           {group.members_count} member

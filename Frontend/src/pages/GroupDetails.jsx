@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import NothingYet from "./../components/ui/NothingYet";
 import BackdropLoader from "../utils/BackdropLoader";
 import { apiFetch } from "./../utils/Fetch";
+import { motion } from "motion/react";
 
 function GroupDetails() {
   const { groupDetails } = useLoaderData();
@@ -19,7 +20,11 @@ function GroupDetails() {
           const { name, members_count, bills_count, balance, bills } = data;
 
           return (
-            <div className="flex flex-col gap-10">
+            <motion.div
+              className="flex flex-col gap-10"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
               <GroupPageHeader
                 name={name}
                 members={members_count}
@@ -55,7 +60,7 @@ function GroupDetails() {
                   />
                 )}
               </section>
-            </div>
+            </motion.div>
           );
         }}
       </Await>
