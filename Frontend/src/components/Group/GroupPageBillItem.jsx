@@ -7,16 +7,17 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { formatDate } from "./../../utils/FormatDate";
 import { UserContext } from "./../../context/UserContext";
 import { useContext } from "react";
 
 function GroupPageBillItem({ bill }) {
   const { user } = useContext(UserContext);
+  const { groupId } = useParams();
 
   return (
-    <Link to={`/bill/${bill.id}/review`}>
+    <Link to={`/groups/${groupId}/bill/${bill.id}/review`}>
       <div className="bg-card border-border text-card-foreground hover:bg-card/20 flex cursor-pointer justify-between rounded-t-xl border p-5 transition-colors">
         <div className="mt-2">
           <Receipt />

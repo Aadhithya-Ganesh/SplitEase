@@ -42,7 +42,7 @@ function Input({
 
         <input
           type={inputType}
-          className={`bg-background ${error ? "border-destructive" : "border-input"} text-foreground placeholder:text-muted-foreground ring-offset-background focus-visible:ring-ring mt-3 flex h-12 w-full rounded-md border px-3 py-2 pl-10 ${icon ? "pl-12" : ""} ${isPassword ? "pr-10" : ""} focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm ${className} `}
+          className={`bg-background caret-primary ${error ? "border-destructive" : "border-input"} text-foreground placeholder:text-muted-foreground ring-offset-background focus-visible:ring-ring mt-3 flex h-12 w-full rounded-md border px-3 py-2 pl-10 ${icon ? "pl-12" : ""} ${isPassword ? "pr-10" : ""} focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm ${className} `}
           {...props}
         />
       </div>

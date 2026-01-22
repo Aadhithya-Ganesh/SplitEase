@@ -6,6 +6,7 @@ import {
   useNavigate,
   Link,
   Await,
+  useParams,
 } from "react-router-dom";
 import BillDetailsSplitSummary from "../components/Bill/BillDetailsSplitSummary";
 import BillDetailsItemsList from "../components/Bill/BillDetailsItemList";
@@ -17,18 +18,17 @@ import { apiFetch } from "../utils/Fetch";
 function BillDetails() {
   const navigate = useNavigate();
   const { user } = useContext(UserContext);
-
+  const { groupId } = useParams();
   const { billDetails } = useLoaderData();
 
   return (
     <div className="flex flex-col gap-5">
-      <Button
-        className="text-foreground hover:bg-accent w-fit py-4"
-        onClick={() => navigate(-1)}
-      >
-        <MoveLeft />
-        <p>Back to Group</p>
-      </Button>
+      <Link to={`/groups/${groupId}`}>
+        <Button className="text-foreground hover:bg-accent w-fit py-4">
+          <MoveLeft />
+          <p>Back to Group</p>
+        </Button>
+      </Link>
       <Suspense fallback={<BackdropLoader />}>
         <Await resolve={billDetails}>
           {(resolvedBills) => (
@@ -61,7 +61,10 @@ function BillDetails() {
                   <Save size={18} />
                   <p>Save Changes</p>
                 </Button>
-                <Link to={`/bill/${resolvedBills.id}/split`} className="w-full">
+                <Link
+                  to={`/groups/${groupId}/bill/${resolvedBills.id}/split`}
+                  className="w-full"
+                >
                   <Button className="bg-primary w-full py-4">
                     <p>Split Bill</p>
                     <MoveRight size={18} />

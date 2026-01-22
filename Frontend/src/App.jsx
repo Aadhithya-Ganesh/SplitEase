@@ -19,9 +19,9 @@ import { action as joinGroupAction } from "./components/JoinGroup";
 import { action as createGroupAction } from "./components/CreateGroup";
 import { action as updateGroupAction } from "./components/UpdateGroup";
 import GroupPage, { loader as groupPageLoader } from "./pages/GroupPage";
-import BillSplit from "./pages/BillSplit";
+import BillSplit, { loader as billSplitLoader } from "./pages/BillSplit";
 import NotFound from "./pages/NotFound";
-import { unAuthLoader } from "./pages/Auth";
+import { authLoader, unAuthLoader } from "./pages/Auth";
 
 function App() {
   const router = createBrowserRouter([
@@ -51,6 +51,7 @@ function App() {
         },
         {
           element: <NavbarLayout />,
+          loader: authLoader,
           children: [
             {
               path: "home",
@@ -75,13 +76,14 @@ function App() {
               loader: groupDetailsLoader,
             },
             {
-              path: "bill/:billId/review",
+              path: "groups/:groupId/bill/:billId/review",
               element: <BillDetails />,
               loader: billDetailsLoader,
             },
             {
-              path: "bill/:billId/split",
+              path: "groups/:groupId/bill/:billId/split",
               element: <BillSplit />,
+              loader: billSplitLoader,
             },
             {
               path: "scan",
