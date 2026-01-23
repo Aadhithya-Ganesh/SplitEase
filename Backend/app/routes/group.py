@@ -1,14 +1,21 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
 from typing import Annotated, List
+from uuid import UUID
+
+from sqlalchemy.orm import Session
+from sqlalchemy import func, case, cast, Numeric
+
+from app.database import get_db
+from app.routes.auth import get_current_user
+
 from app.models.users import Users
 from app.models.groups import Group
 from app.models.users_groups import UserGroup
 from app.models.bills import Bill
+from app.models.bill_item import BillItem
 from app.models.bill_split import BillSplit
-from fastapi import Depends, HTTPException
-from app.routes.auth import get_current_user
-from app.database import get_db
-from sqlalchemy.orm import Session
+from app.models.bill_payments import BillPayment
+
 from app.schemas.group import (
     GroupListItem,
     GroupResponse,
@@ -16,10 +23,15 @@ from app.schemas.group import (
     GroupDetailResponse,
     GroupJoinResponse,
 )
-from uuid import UUID
-from sqlalchemy import func, case
 
 router = APIRouter(prefix="/api/groups", tags=["groups"])
+
+
+def item_share_amount():
+    return cast(
+        (BillItem.amount * BillItem.quantity) * BillSplit.percentage / 100,
+        Numeric(10, 2),
+    )
 
 
 @router.get("", response_model=List[GroupListItem])
@@ -36,6 +48,8 @@ async def get_groups_of_user(
         .subquery()
     )
 
+    share = item_share_amount()
+
     groups = (
         db.query(
             Group.id.label("id"),
@@ -45,17 +59,19 @@ async def get_groups_of_user(
             func.coalesce(
                 func.sum(
                     case(
+                        # you paid → others unpaid → they owe you
                         (
                             (Bill.paid_by == user.id)
-                            & (BillSplit.user_id != user.id)
-                            & (BillSplit.is_paid == False),
-                            BillSplit.amount,
+                            & (BillPayment.is_paid == False)
+                            & (BillPayment.user_id != user.id),
+                            share,
                         ),
+                        # someone else paid → you unpaid → you owe them
                         (
                             (Bill.paid_by != user.id)
-                            & (BillSplit.user_id == user.id)
-                            & (BillSplit.is_paid == False),
-                            -BillSplit.amount,
+                            & (BillPayment.is_paid == False)
+                            & (BillPayment.user_id == user.id),
+                            -share,
                         ),
                         else_=0,
                     )
@@ -64,11 +80,12 @@ async def get_groups_of_user(
             ).label("balance"),
         )
         .select_from(Group)
-        # membership check (does NOT affect count)
         .join(UserGroup, UserGroup.group_id == Group.id)
         .join(members_subq, members_subq.c.group_id == Group.id)
         .outerjoin(Bill, Bill.group_id == Group.id)
+        .outerjoin(BillPayment, BillPayment.bill_id == Bill.id)
         .outerjoin(BillSplit, BillSplit.bill_id == Bill.id)
+        .outerjoin(BillItem, BillItem.id == BillSplit.item_id)
         .filter(UserGroup.user_id == user.id)
         .group_by(
             Group.id,
@@ -92,9 +109,7 @@ async def create_group(
     db.commit()
     db.refresh(group)
 
-    user_group = UserGroup(user_id=user.id, group_id=group.id, role="OWNER")
-
-    db.add(user_group)
+    db.add(UserGroup(user_id=user.id, group_id=group.id, role="OWNER"))
     db.commit()
 
     return group
@@ -110,31 +125,22 @@ async def join_group(
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
 
-    existing = (
+    exists = (
         db.query(UserGroup)
-        .filter(
-            UserGroup.user_id == user.id,
-            UserGroup.group_id == group.id,
-        )
+        .filter(UserGroup.user_id == user.id, UserGroup.group_id == group.id)
         .first()
     )
 
-    if existing:
+    if exists:
         raise HTTPException(status_code=409, detail="Already a member")
 
-    user_group = UserGroup(
-        user_id=user.id,
-        group_id=group.id,
-        role="MEMBER",
-    )
-
-    db.add(user_group)
+    db.add(UserGroup(user_id=user.id, group_id=group.id, role="MEMBER"))
     db.commit()
 
     return {
         "group_id": group.id,
         "group_name": group.name,
-        "role": user_group.role,
+        "role": "MEMBER",
     }
 
 
@@ -144,41 +150,28 @@ async def get_group_by_id(
     db: Annotated[Session, Depends(get_db)],
     group_id: UUID,
 ):
-    # -----------------------------
-    # 1. Check access
-    # -----------------------------
     group = (
         db.query(Group)
-        .join(UserGroup, UserGroup.group_id == Group.id)
-        .filter(
-            Group.id == group_id,
-            UserGroup.user_id == user.id,
-        )
+        .join(UserGroup)
+        .filter(Group.id == group_id, UserGroup.user_id == user.id)
         .first()
     )
 
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
 
-    # -----------------------------
-    # 2. Members count
-    # -----------------------------
     members_count = (
         db.query(func.count(UserGroup.user_id))
         .filter(UserGroup.group_id == group_id)
         .scalar()
     )
 
-    # -----------------------------
-    # 3. Bills count
-    # -----------------------------
     bills_count = (
         db.query(func.count(Bill.id)).filter(Bill.group_id == group_id).scalar()
     )
 
-    # -----------------------------
-    # 4. Group balance (FIXED)
-    # -----------------------------
+    share = item_share_amount()
+
     balance = (
         db.query(
             func.coalesce(
@@ -186,30 +179,30 @@ async def get_group_by_id(
                     case(
                         (
                             (Bill.paid_by == user.id)
-                            & (BillSplit.user_id != user.id)
-                            & (BillSplit.is_paid == False),
-                            BillSplit.amount,
+                            & (BillPayment.is_paid == False)
+                            & (BillPayment.user_id != user.id),
+                            share,
                         ),
                         (
                             (Bill.paid_by != user.id)
-                            & (BillSplit.user_id == user.id)
-                            & (BillSplit.is_paid == False),
-                            -BillSplit.amount,
+                            & (BillPayment.is_paid == False)
+                            & (BillPayment.user_id == user.id),
+                            -share,
                         ),
+                        else_=0,
                     )
                 ),
                 0,
             )
         )
-        .select_from(Bill)  # 🔥 REQUIRED
+        .select_from(Bill)
+        .join(BillPayment, BillPayment.bill_id == Bill.id)
         .join(BillSplit, BillSplit.bill_id == Bill.id)
+        .join(BillItem, BillItem.id == BillSplit.item_id)
         .filter(Bill.group_id == group_id)
         .scalar()
     )
 
-    # -----------------------------
-    # 5. Bills list
-    # -----------------------------
     bills = (
         db.query(
             Bill.id,
@@ -217,30 +210,37 @@ async def get_group_by_id(
             Bill.total_amount,
             Bill.created_at,
             Users.fullname.label("paid_by"),
-            func.count(case((BillSplit.is_paid == False, 1))).label("pending_count"),
+            # ✅ FIXED pending count
+            func.count(
+                func.distinct(case((BillPayment.is_paid == False, BillPayment.user_id)))
+            ).label("pending_count"),
+            # user balance (still from splits)
             func.coalesce(
                 func.sum(
                     case(
                         (
                             (Bill.paid_by == user.id)
-                            & (BillSplit.user_id != user.id)
-                            & (BillSplit.is_paid == False),
-                            BillSplit.amount,
+                            & (BillPayment.is_paid == False)
+                            & (BillPayment.user_id != user.id),
+                            share,
                         ),
                         (
                             (Bill.paid_by != user.id)
-                            & (BillSplit.user_id == user.id)
-                            & (BillSplit.is_paid == False),
-                            -BillSplit.amount,
+                            & (BillPayment.is_paid == False)
+                            & (BillPayment.user_id == user.id),
+                            -share,
                         ),
+                        else_=0,
                     )
                 ),
                 0,
             ).label("user_balance"),
         )
-        .select_from(Bill)  # 🔥 ALSO REQUIRED
+        .select_from(Bill)
         .join(Users, Users.id == Bill.paid_by)
+        .join(BillPayment, BillPayment.bill_id == Bill.id)
         .join(BillSplit, BillSplit.bill_id == Bill.id)
+        .join(BillItem, BillItem.id == BillSplit.item_id)
         .filter(Bill.group_id == group_id)
         .group_by(Bill.id, Users.fullname)
         .all()
@@ -275,10 +275,7 @@ async def update_group_name(
     )
 
     if not group:
-        raise HTTPException(
-            status_code=403,
-            detail="Only group owner can update group name",
-        )
+        raise HTTPException(status_code=403, detail="Only owner can update group")
 
     group.name = payload.name  # type: ignore
     db.commit()
@@ -305,10 +302,7 @@ async def delete_group(
     )
 
     if not group:
-        raise HTTPException(
-            status_code=403,
-            detail="Only group owner can delete group",
-        )
+        raise HTTPException(status_code=403, detail="Only owner can delete group")
 
     db.delete(group)
     db.commit()

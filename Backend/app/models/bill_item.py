@@ -21,9 +21,10 @@ class BillItem(Base):
     amount = Column(Numeric(10, 2), nullable=False)
     quantity = Column(Integer, default=1, nullable=False)
 
-    created_at = Column(
-        DateTime(timezone=True), default=datetime.utcnow, nullable=False
-    )
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
 
-    # relationships
     bill = relationship("Bill", back_populates="items")
+    splits = relationship(
+        "BillSplit",
+        cascade="all, delete-orphan",
+    )

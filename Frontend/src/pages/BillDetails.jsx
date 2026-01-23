@@ -85,7 +85,7 @@ export async function loader({ params }) {
   const { billId } = params;
 
   return {
-    billDetails: apiFetch(`/api/bills/${billId}`, {
+    billDetails: apiFetch(`/api/bills/${billId}/review`, {
       method: "GET",
     }).then((res) => res.json()),
   };

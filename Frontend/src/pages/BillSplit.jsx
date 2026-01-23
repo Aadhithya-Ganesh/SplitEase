@@ -91,7 +91,7 @@ export default BillSplit;
 
 export async function loader({ params }) {
   const data = {
-    bill_id: 1,
+    id: 1,
     payee_id: "user_1",
     members: 3,
     users: [
