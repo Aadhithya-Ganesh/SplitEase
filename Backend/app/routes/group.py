@@ -177,16 +177,18 @@ async def get_group_by_id(
             func.coalesce(
                 func.sum(
                     case(
+                        # You paid → others owe you
                         (
                             (Bill.paid_by == user.id)
-                            & (BillPayment.is_paid == False)
-                            & (BillPayment.user_id != user.id),
+                            & (BillSplit.user_id != user.id)
+                            & (BillPayment.is_paid == False),
                             share,
                         ),
+                        # Someone else paid → you owe them
                         (
                             (Bill.paid_by != user.id)
-                            & (BillPayment.is_paid == False)
-                            & (BillPayment.user_id == user.id),
+                            & (BillSplit.user_id == user.id)
+                            & (BillPayment.is_paid == False),
                             -share,
                         ),
                         else_=0,
@@ -196,9 +198,13 @@ async def get_group_by_id(
             )
         )
         .select_from(Bill)
-        .join(BillPayment, BillPayment.bill_id == Bill.id)
         .join(BillSplit, BillSplit.bill_id == Bill.id)
         .join(BillItem, BillItem.id == BillSplit.item_id)
+        .outerjoin(
+            BillPayment,
+            (BillPayment.bill_id == Bill.id)
+            & (BillPayment.user_id == BillSplit.user_id),
+        )
         .filter(Bill.group_id == group_id)
         .scalar()
     )
@@ -207,27 +213,36 @@ async def get_group_by_id(
         db.query(
             Bill.id,
             Bill.title,
-            Bill.total_amount,
             Bill.created_at,
             Users.fullname.label("paid_by"),
-            # ✅ FIXED pending count
+            # ✅ bill total (derived, no duplication)
+            func.coalesce(
+                func.sum(func.distinct(BillItem.amount * BillItem.quantity)),
+                0,
+            ).label("total_amount"),
+            # ✅ pending users (bill-level)
             func.count(
-                func.distinct(case((BillPayment.is_paid == False, BillPayment.user_id)))
+                func.distinct(
+                    case(
+                        (BillPayment.is_paid == False, BillPayment.user_id),
+                        else_=None,
+                    )
+                )
             ).label("pending_count"),
-            # user balance (still from splits)
+            # ✅ user balance
             func.coalesce(
                 func.sum(
                     case(
                         (
                             (Bill.paid_by == user.id)
                             & (BillPayment.is_paid == False)
-                            & (BillPayment.user_id != user.id),
+                            & (BillSplit.user_id != user.id),
                             share,
                         ),
                         (
                             (Bill.paid_by != user.id)
                             & (BillPayment.is_paid == False)
-                            & (BillPayment.user_id == user.id),
+                            & (BillSplit.user_id == user.id),
                             -share,
                         ),
                         else_=0,
@@ -238,9 +253,13 @@ async def get_group_by_id(
         )
         .select_from(Bill)
         .join(Users, Users.id == Bill.paid_by)
-        .join(BillPayment, BillPayment.bill_id == Bill.id)
         .join(BillSplit, BillSplit.bill_id == Bill.id)
         .join(BillItem, BillItem.id == BillSplit.item_id)
+        .outerjoin(
+            BillPayment,
+            (BillPayment.bill_id == Bill.id)
+            & (BillPayment.user_id == BillSplit.user_id),
+        )
         .filter(Bill.group_id == group_id)
         .group_by(Bill.id, Users.fullname)
         .all()

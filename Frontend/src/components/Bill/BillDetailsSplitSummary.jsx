@@ -13,23 +13,18 @@ function BillDetailsSplitSummary({ members, payee }) {
     if (isUser) {
       // You paid → others still owe you
       return memberList
-        .filter((m) => !m.is_paid && m.id !== user.id)
+        .filter((m) => !m.is_paid && m.id !== user?.id)
         .reduce((sum, m) => sum + m.amount, 0);
     }
 
     // Someone else paid → your share (fixed value)
-    return memberList.find((m) => m.id === user.id)?.amount ?? 0;
-  }, [memberList, isUser, user.id]);
+    return memberList.find((m) => m.id === user?.id)?.amount ?? 0;
+  }, [memberList, isUser, user?.id]);
 
   const myMember = members.find((m) => m.id === user?.id);
 
   // for non-payee
   const iHavePaid = myMember?.is_paid;
-
-  // for payee: check if everyone else has paid
-  const everyonePaid = members
-    .filter((m) => m.role !== "payer")
-    .every((m) => m.is_paid);
 
   return (
     <div className="bg-card border-border flex flex-col gap-4 rounded-xl border px-5 py-8">

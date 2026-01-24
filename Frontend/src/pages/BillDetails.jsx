@@ -56,11 +56,7 @@ function BillDetails() {
                 payee={resolvedBills["paid_by"]}
               />
               <BillDetailsItemsList items={resolvedBills.items} />
-              <Form className="flex w-full items-center gap-7">
-                <Button type="submit" className="text-foreground w-full py-4">
-                  <Save size={18} />
-                  <p>Save Changes</p>
-                </Button>
+              <div className="flex w-full items-center gap-7">
                 <Link
                   to={`/groups/${groupId}/bill/${resolvedBills.id}/split`}
                   className="w-full"
@@ -70,7 +66,7 @@ function BillDetails() {
                     <MoveRight size={18} />
                   </Button>
                 </Link>
-              </Form>
+              </div>
             </>
           )}
         </Await>

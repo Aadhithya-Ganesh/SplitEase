@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from app.routes.auth import router as auth_router
 from app.routes.bill import router as bill_router
 from app.routes.group import router as group_router
+from app.routes.items import router as items_router
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db, get_db_health
@@ -57,3 +58,4 @@ async def health_check():
 app.include_router(auth_router)
 app.include_router(bill_router)
 app.include_router(group_router)
+app.include_router(items_router)

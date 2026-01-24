@@ -1,5 +1,6 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from uuid import UUID
+from typing import Optional, Annotated
 
 
 class ItemCreate(BaseModel):
@@ -10,9 +11,8 @@ class ItemCreate(BaseModel):
 
 
 class ItemUpdate(BaseModel):
-    name: str | None = None
-    amount: float
-    quantity: int
+    quantity: Annotated[Optional[int], Field(ge=1)] = None
+    amount: Annotated[Optional[float], Field(ge=0)] = None
 
 
 class ItemResponse(BaseModel):

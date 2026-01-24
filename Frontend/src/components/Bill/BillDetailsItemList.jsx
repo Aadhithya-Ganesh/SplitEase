@@ -1,37 +1,90 @@
 import { GripVertical, Plus, Trash, DollarSign } from "lucide-react";
 import { Reorder } from "motion/react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Input from "./../ui/Input";
 import Button from "../ui/Button";
+import { useParams } from "react-router-dom";
+import { apiFetch } from "../../utils/Fetch";
+import { toast } from "sonner";
 
 function BillDetailsItemsList({ items }) {
   const [itemsList, setItemsList] = useState(items);
   const [newItem, setNewItem] = useState("");
+  const { billId } = useParams();
+  const updateTimers = useRef({});
+
+  function persistItemUpdate(id, updates) {
+    if (updateTimers.current[id]) {
+      clearTimeout(updateTimers.current[id]);
+    }
+
+    updateTimers.current[id] = setTimeout(async () => {
+      const body = {};
+      if (updates.quantity !== undefined) body.quantity = updates.quantity;
+      if (updates.price !== undefined) body.amount = updates.price;
+
+      const response = await apiFetch(`/api/items/${id}`, {
+        method: "PUT",
+        body,
+      });
+
+      if (!response.ok) {
+        toast.error("Failed to update item");
+      }
+    }, 800);
+  }
 
   function updateItem(id, updates) {
     setItemsList((prev) =>
       prev.map((item) => (item.id === id ? { ...item, ...updates } : item)),
     );
+
+    persistItemUpdate(id, updates);
   }
 
-  function deleteItem(id) {
-    setItemsList((prev) => prev.filter((item) => item.id !== id));
+  async function deleteItem(id) {
+    const response = await apiFetch(`/api/items/${id}`, { method: "DELETE" });
+
+    if (response.ok) {
+      toast.success("Item deleted");
+      setItemsList((prev) => prev.filter((item) => item.id !== id));
+    } else {
+      toast.error("Error occured");
+    }
   }
 
-  function addItem() {
+  async function addItem() {
     if (!newItem.trim()) return;
 
-    setItemsList((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
+    const response = await apiFetch("/api/items", {
+      method: "POST",
+      body: {
+        bill_id: billId,
         name: newItem,
+        amount: 0,
         quantity: 1,
-        price: 0,
       },
-    ]);
+    });
 
-    setNewItem("");
+    if (response.ok) {
+      const data = await response.json();
+      setItemsList((prev) => [
+        ...prev,
+        {
+          id: data.id,
+          name: newItem,
+          quantity: 1,
+          price: 0,
+        },
+      ]);
+
+      toast.success("Item added");
+
+      setNewItem("");
+    } else {
+      toast.error("Error occured");
+      return;
+    }
   }
 
   const total = itemsList.reduce(
