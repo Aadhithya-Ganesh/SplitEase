@@ -5,6 +5,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
+from app.schemas.bill_item import BillReviewResponse
 from app.database import get_db
 from app.routes.auth import get_current_user
 
@@ -20,12 +21,13 @@ router = APIRouter(prefix="/api/bills", tags=["bill"])
 # --------------------------------------------------
 # GET BILL REVIEW
 # --------------------------------------------------
-@router.get("/{bill_id}/review")
-async def get_bill_by_id(
+@router.get("/{bill_id}/review", response_model=BillReviewResponse)
+async def get_bill_review(
     bill_id: UUID,
     user: Annotated[Users, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ):
+    # ---------------- BILL ----------------
     bill = db.query(Bill).filter(Bill.id == bill_id).first()
     if not bill:
         raise HTTPException(status_code=404, detail="Bill not found")
@@ -33,6 +35,15 @@ async def get_bill_by_id(
     # ---------------- ITEMS ----------------
     items = db.query(BillItem).filter(BillItem.bill_id == bill_id).all()
 
+    # ---------------- SPLITS ----------------
+    splits = db.query(BillSplit).filter(BillSplit.bill_id == bill_id).all()
+
+    # group splits by item
+    splits_by_item: dict[UUID, list[BillSplit]] = {}
+    for s in splits:
+        splits_by_item.setdefault(s.item_id, []).append(s)  # type: ignore
+
+    # ---------------- ITEM TOTALS + PAYLOAD ----------------
     item_totals: dict[UUID, float] = {}
     items_payload = []
 
@@ -47,19 +58,24 @@ async def get_bill_by_id(
                 "quantity": item.quantity,
                 "price": float(item.amount),  # type: ignore
                 "total": round(total, 2),  # type: ignore
+                "participants": [
+                    {
+                        "user_id": str(s.user_id),
+                        "percentage": float(s.percentage),
+                    }
+                    for s in splits_by_item.get(item.id, [])  # type: ignore
+                ],
             }
         )
 
-    # ---------------- SPLITS ----------------
-    splits = (
-        db.query(
-            BillSplit.user_id,
-            BillSplit.item_id,
-            BillSplit.percentage,
-        )
-        .filter(BillSplit.bill_id == bill_id)
-        .all()
-    )
+    # ---------------- MEMBER TOTALS ----------------
+    member_totals: dict[UUID, float] = {}
+
+    for s in splits:
+        item_total = item_totals.get(s.item_id, 0)  # type: ignore
+        share = item_total * (float(s.percentage) / 100)  # type: ignore
+
+        member_totals[s.user_id] = member_totals.get(s.user_id, 0) + share  # type: ignore
 
     # ---------------- PAYMENTS ----------------
     payments = {
@@ -75,15 +91,6 @@ async def get_bill_by_id(
         .distinct()
         .all()
     )
-
-    # ---------------- CALCULATE MEMBER TOTALS ----------------
-    member_totals: dict[UUID, float] = {}
-
-    for s in splits:
-        item_total = item_totals.get(s.item_id, 0)
-        share = item_total * (float(s.percentage) / 100)
-
-        member_totals[s.user_id] = member_totals.get(s.user_id, 0) + share
 
     members_payload = []
     for u in users:
@@ -103,13 +110,12 @@ async def get_bill_by_id(
     return {
         "id": str(bill.id),
         "title": bill.title,
-        "total_amount": float(bill.total_amount),  # type: ignore
         "paid_by": {
             "id": str(bill.paid_by),
             "name": db.query(Users.fullname).filter(Users.id == bill.paid_by).scalar(),
         },
-        "members": members_payload,
         "items": items_payload,
+        "members": members_payload,
     }
 
 

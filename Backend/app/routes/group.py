@@ -39,6 +39,9 @@ async def get_groups_of_user(
     user: Annotated[Users, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ):
+    # --------------------------------------------------
+    # MEMBERS COUNT PER GROUP
+    # --------------------------------------------------
     members_subq = (
         db.query(
             UserGroup.group_id,
@@ -48,54 +51,84 @@ async def get_groups_of_user(
         .subquery()
     )
 
-    share = item_share_amount()
+    # --------------------------------------------------
+    # USER SHARE PER BILL (⚠️ critical aggregation)
+    # one row = (bill_id, user_id, share)
+    # --------------------------------------------------
+    user_bill_share_subq = (
+        db.query(
+            Bill.id.label("bill_id"),
+            Bill.group_id.label("group_id"),
+            BillSplit.user_id.label("user_id"),
+            func.sum(
+                BillItem.amount * BillItem.quantity * (BillSplit.percentage / 100)
+            ).label("user_share"),
+        )
+        .join(BillSplit, BillSplit.bill_id == Bill.id)
+        .join(BillItem, BillItem.id == BillSplit.item_id)
+        .group_by(Bill.id, Bill.group_id, BillSplit.user_id)
+        .subquery()
+    )
 
+    # --------------------------------------------------
+    # BILL BALANCE PER GROUP FOR CURRENT USER
+    # --------------------------------------------------
+    bill_balance_subq = (
+        db.query(
+            user_bill_share_subq.c.group_id,
+            func.sum(
+                case(
+                    # you paid → others unpaid → they owe you
+                    (
+                        (Bill.paid_by == user.id)
+                        & (BillPayment.is_paid == False)
+                        & (user_bill_share_subq.c.user_id != user.id),
+                        user_bill_share_subq.c.user_share,
+                    ),
+                    # someone else paid → you unpaid → you owe them
+                    (
+                        (Bill.paid_by != user.id)
+                        & (BillPayment.is_paid == False)
+                        & (user_bill_share_subq.c.user_id == user.id),
+                        -user_bill_share_subq.c.user_share,
+                    ),
+                    else_=0,
+                )
+            ).label("balance"),
+        )
+        .join(Bill, Bill.id == user_bill_share_subq.c.bill_id)
+        .join(
+            BillPayment,
+            (BillPayment.bill_id == Bill.id)
+            & (BillPayment.user_id == user_bill_share_subq.c.user_id),
+        )
+        .group_by(user_bill_share_subq.c.group_id)
+        .subquery()
+    )
+
+    # --------------------------------------------------
+    # FINAL GROUP QUERY
+    # --------------------------------------------------
     groups = (
         db.query(
             Group.id.label("id"),
             Group.name.label("name"),
             Group.created_by.label("created_by"),
             members_subq.c.members_count,
-            func.coalesce(
-                func.sum(
-                    case(
-                        # you paid → others unpaid → they owe you
-                        (
-                            (Bill.paid_by == user.id)
-                            & (BillPayment.is_paid == False)
-                            & (BillPayment.user_id != user.id),
-                            share,
-                        ),
-                        # someone else paid → you unpaid → you owe them
-                        (
-                            (Bill.paid_by != user.id)
-                            & (BillPayment.is_paid == False)
-                            & (BillPayment.user_id == user.id),
-                            -share,
-                        ),
-                        else_=0,
-                    )
-                ),
-                0,
-            ).label("balance"),
+            func.coalesce(bill_balance_subq.c.balance, 0).label("balance"),
         )
         .select_from(Group)
         .join(UserGroup, UserGroup.group_id == Group.id)
         .join(members_subq, members_subq.c.group_id == Group.id)
-        .outerjoin(Bill, Bill.group_id == Group.id)
-        .outerjoin(BillPayment, BillPayment.bill_id == Bill.id)
-        .outerjoin(BillSplit, BillSplit.bill_id == Bill.id)
-        .outerjoin(BillItem, BillItem.id == BillSplit.item_id)
-        .filter(UserGroup.user_id == user.id)
-        .group_by(
-            Group.id,
-            Group.name,
-            Group.created_by,
-            members_subq.c.members_count,
+        .outerjoin(
+            bill_balance_subq,
+            bill_balance_subq.c.group_id == Group.id,
         )
+        .filter(UserGroup.user_id == user.id)
+        .all()
     )
 
-    return groups.all()
+    return groups
 
 
 @router.post("/create_group", response_model=GroupResponse)

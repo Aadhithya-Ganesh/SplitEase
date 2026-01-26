@@ -7,8 +7,7 @@ import { useParams } from "react-router-dom";
 import { apiFetch } from "../../utils/Fetch";
 import { toast } from "sonner";
 
-function BillDetailsItemsList({ items }) {
-  const [itemsList, setItemsList] = useState(items);
+function BillDetailsItemsList({ items, setItemsList, members }) {
   const [newItem, setNewItem] = useState("");
   const { billId } = useParams();
   const updateTimers = useRef({});
@@ -22,6 +21,8 @@ function BillDetailsItemsList({ items }) {
       const body = {};
       if (updates.quantity !== undefined) body.quantity = updates.quantity;
       if (updates.price !== undefined) body.amount = updates.price;
+      if (updates.quantity === "") return;
+      if (updates.price === "") return;
 
       const response = await apiFetch(`/api/items/${id}`, {
         method: "PUT",
@@ -53,6 +54,19 @@ function BillDetailsItemsList({ items }) {
     }
   }
 
+  function buildEqualParticipants(members) {
+    const count = members.length;
+    if (!count) return [];
+
+    const base = +(100 / count).toFixed(2);
+    const remainder = +(100 - base * count).toFixed(2);
+
+    return members.map((m, idx) => ({
+      user_id: m.id,
+      percentage: idx === 0 ? base + remainder : base, // fix rounding
+    }));
+  }
+
   async function addItem() {
     if (!newItem.trim()) return;
 
@@ -66,28 +80,32 @@ function BillDetailsItemsList({ items }) {
       },
     });
 
-    if (response.ok) {
-      const data = await response.json();
-      setItemsList((prev) => [
-        ...prev,
-        {
-          id: data.id,
-          name: newItem,
-          quantity: 1,
-          price: 0,
-        },
-      ]);
-
-      toast.success("Item added");
-
-      setNewItem("");
-    } else {
-      toast.error("Error occured");
+    if (!response.ok) {
+      toast.error("Error occurred");
       return;
     }
+
+    const data = await response.json();
+
+    const participants = buildEqualParticipants(members);
+
+    setItemsList((prev) => [
+      ...prev,
+      {
+        id: data.id,
+        name: newItem,
+        quantity: 1,
+        price: 0,
+        total: 0,
+        participants,
+      },
+    ]);
+
+    toast.success("Item added");
+    setNewItem("");
   }
 
-  const total = itemsList.reduce(
+  const total = items.reduce(
     (sum, item) => sum + item.quantity * item.price,
     0,
   );
@@ -105,8 +123,8 @@ function BillDetailsItemsList({ items }) {
         </div>
 
         {/* ITEMS */}
-        <Reorder.Group values={itemsList} onReorder={setItemsList}>
-          {itemsList.map((item) => (
+        <Reorder.Group values={items} onReorder={setItemsList}>
+          {items.map((item) => (
             <Reorder.Item
               key={item.id}
               value={item}
@@ -124,9 +142,15 @@ function BillDetailsItemsList({ items }) {
                 value={item.quantity}
                 onChange={(e) =>
                   updateItem(item.id, {
-                    quantity: Math.max(1, Number(e.target.value)),
+                    quantity:
+                      e.target.value === "" ? "" : Number(e.target.value),
                   })
                 }
+                onBlur={() => {
+                  if (!item.quantity || item.quantity < 1) {
+                    updateItem(item.id, { quantity: 1 });
+                  }
+                }}
                 className="mt-0 h-10 text-center font-semibold"
               />
 
@@ -137,9 +161,14 @@ function BillDetailsItemsList({ items }) {
                 value={item.price}
                 onChange={(e) =>
                   updateItem(item.id, {
-                    price: Math.max(0, Number(e.target.value)),
+                    price: e.target.value === "" ? "" : Number(e.target.value),
                   })
                 }
+                onBlur={() => {
+                  if (item.price === "" || item.price < 0) {
+                    updateItem(item.id, { price: 0 });
+                  }
+                }}
                 className="mt-0 h-10 text-right font-semibold"
               />
 

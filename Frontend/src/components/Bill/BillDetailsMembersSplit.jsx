@@ -10,13 +10,21 @@ function BillDetailsMembersSplit({ members, setMembers, isUserPayee }) {
   const { billId } = useParams();
 
   async function toggleSettled(id) {
+    // optimistic update on BASE members
+    setMembers((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, is_paid: !m.is_paid } : m)),
+    );
+
     const response = await apiFetch(`/api/bills/${billId}/payments/${id}`, {
       method: "PUT",
     });
 
-    setMembers((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, is_paid: !m.is_paid } : m)),
-    );
+    if (!response.ok) {
+      // rollback
+      setMembers((prev) =>
+        prev.map((m) => (m.id === id ? { ...m, is_paid: !m.is_paid } : m)),
+      );
+    }
   }
 
   return (
