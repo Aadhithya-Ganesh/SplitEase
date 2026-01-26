@@ -1,11 +1,17 @@
-import { useMemo } from "react";
+import { use, useMemo } from "react";
 import Button from "../ui/Button";
 import { Users } from "lucide-react";
+import { apiFetch } from "../../utils/Fetch";
+import { useNavigate, useParams } from "react-router-dom";
+import { toast } from "sonner";
 
 function BillSplitSummary({ items, users }) {
   /**
    * Build per-user totals from itemized percentages
    */
+  const { groupId, billId } = useParams();
+  const navigate = useNavigate();
+
   const summary = useMemo(() => {
     const totals = {};
 
@@ -39,6 +45,27 @@ function BillSplitSummary({ items, users }) {
     [summary],
   );
 
+  async function handleSave() {
+    console.log(items);
+    const response = await apiFetch(`/api/bills/${billId}/splits/save`, {
+      method: "POST",
+      body: {
+        items: items.map((item) => ({
+          id: item.id,
+          participants: item.participants,
+          split_mode: item.split_mode,
+        })),
+      },
+    });
+
+    if (response.ok) {
+      toast.success("Bill split saved successfully!");
+      navigate(`/groups/${groupId}/bill/${billId}/review`);
+    } else {
+      toast.error("Failed to save bill split. Please try again.");
+    }
+  }
+
   return (
     <div className="bg-card border-border flex flex-col gap-5 rounded-xl border p-6">
       <div className="text-foreground flex items-center gap-3">
@@ -68,7 +95,9 @@ function BillSplitSummary({ items, users }) {
         <p className="text-primary text-lg font-bold">${grandTotal}</p>
       </div>
 
-      <Button className="bg-primary mt-2 w-full">Save Split</Button>
+      <Button className="bg-primary mt-2 w-full" onClick={handleSave}>
+        Save Split
+      </Button>
     </div>
   );
 }

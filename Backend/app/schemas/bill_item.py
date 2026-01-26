@@ -36,6 +36,7 @@ class BillItemReviewResponse(BaseModel):
     quantity: int
     price: float
     total: float
+    split_mode: str
     participants: list[ItemParticipantResponse]
 
 

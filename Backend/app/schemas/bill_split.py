@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 from uuid import UUID
+from typing import List
+
 
 class UserBillCreate(BaseModel):
     user_id: UUID
@@ -14,3 +16,18 @@ class UserBillResponse(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class SplitParticipant(BaseModel):
+    user_id: UUID
+    percentage: float
+
+
+class ItemSplitUpdate(BaseModel):
+    id: UUID
+    participants: List[SplitParticipant]
+    split_mode: str  # e.g., "equal", "custom"
+
+
+class UpdateBillSplitsRequest(BaseModel):
+    items: List[ItemSplitUpdate]

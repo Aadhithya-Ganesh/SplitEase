@@ -57,14 +57,18 @@ async def add_item(
         raise HTTPException(status_code=400, detail="No members found for bill")
 
     # -----------------------------
-    # 4. Equal split percentages
+    # 4. Equal split percentages (whole numbers)
     # -----------------------------
     count = len(members)
-    base_percentage = round(100 / count, 2)
 
-    # fix floating remainder (e.g. 33.33 * 3 = 99.99)
-    percentages = [base_percentage] * count
-    percentages[-1] += round(100 - sum(percentages), 2)
+    base = 100 // count  # integer division
+    remainder = 100 % count  # leftover percentage points
+
+    percentages = [base] * count
+
+    # distribute remainder (e.g. +1) to first N members
+    for i in range(remainder):
+        percentages[i] += 1
 
     # -----------------------------
     # 5. Insert bill_splits

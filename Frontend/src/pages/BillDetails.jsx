@@ -15,7 +15,7 @@ function BillDetails() {
 
   return (
     <div className="flex flex-col gap-5">
-      <Link to={`/groups/${groupId}`}>
+      <Link to={`/groups/${groupId}`} className="w-fit">
         <Button className="text-foreground hover:bg-accent w-fit py-4">
           <MoveLeft />
           <p>Back to Group</p>

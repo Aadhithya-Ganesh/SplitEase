@@ -1,37 +1,66 @@
 import { ChevronDown } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Select from "./../ui/Select";
 import SplitParticipantsList from "./SplitParticipantList";
 
 function BillSplitItems({ item, users, enabled, onUpdate }) {
   const [details, setDetails] = useState(false);
-  const [splitMode, setSplitMode] = useState("equal");
+  const [splitMode, setSplitMode] = useState(item.split_mode);
+  const lastPayload = useRef(null);
 
-  // 🔒 local working copy (KEEP)
-  const [participants, setParticipants] = useState(
-    item.participants.map((p) => ({
-      ...p,
-      selected: p.percentage > 0,
-    })),
-  );
+  // 🔒 local working copy
+  const [participants, setParticipants] = useState([]);
+
+  useEffect(() => {
+    setParticipants(
+      item.participants.map((p) => ({
+        ...p,
+        selected: p.percentage > 0,
+      })),
+    );
+  }, [item.id]);
 
   const selectedCount = useMemo(
     () => participants.filter((p) => p.selected).length,
     [participants],
   );
 
-  const perPerson =
-    splitMode === "equal" && selectedCount > 0 ? item.total / selectedCount : 0;
+  const perPerson = useMemo(() => {
+    if (selectedCount === 0) return 0;
+
+    if (splitMode === "equal") {
+      return item.total / selectedCount;
+    }
+
+    // percentage mode → average selected share
+    const selected = participants.filter((p) => p.selected);
+    const avgPercent =
+      selected.reduce((sum, p) => sum + p.percentage, 0) / selected.length;
+
+    return (item.total * avgPercent) / 100;
+  }, [splitMode, participants, item.total, selectedCount]);
+
+  const selectedIds = useMemo(
+    () =>
+      participants
+        .filter((p) => p.selected)
+        .map((p) => p.user_id)
+        .join(","),
+    [participants],
+  );
 
   /**
-   * 🔁 REDISTRIBUTE percentages (ALWAYS TOTAL = 100)
+   * ⚖️ AUTO-DISTRIBUTE (ONLY if empty)
    */
   useEffect(() => {
     if (splitMode !== "percentage") return;
 
     const selected = participants.filter((p) => p.selected);
     if (!selected.length) return;
+
+    const total = selected.reduce((sum, p) => sum + p.percentage, 0);
+    if (total > 0) return; // 👈 don't override user edits
 
     const equal = +(100 / selected.length).toFixed(2);
 
@@ -40,21 +69,28 @@ function BillSplitItems({ item, users, enabled, onUpdate }) {
         p.selected ? { ...p, percentage: equal } : { ...p, percentage: 0 },
       ),
     );
-  }, [
-    splitMode,
-    participants.map((p) => p.selected).join(","), // ✅ intentional
-  ]);
+  }, [splitMode, selectedIds]);
 
   /**
    * ⬆️ SYNC UP
    */
-  useEffect(() => {
-    onUpdate({
+  const payload = useMemo(
+    () => ({
       ...item,
       split_mode: splitMode,
       participants: participants.map(({ selected, ...p }) => p),
-    });
-  }, [participants, splitMode]);
+    }),
+    [participants, splitMode, item],
+  );
+
+  useEffect(() => {
+    const serialized = JSON.stringify(payload);
+
+    if (lastPayload.current === serialized) return;
+
+    lastPayload.current = serialized;
+    onUpdate(payload);
+  }, [payload, onUpdate]);
 
   return (
     <motion.li layout className="bg-card border-border rounded-xl border">
@@ -68,12 +104,12 @@ function BillSplitItems({ item, users, enabled, onUpdate }) {
         <div>
           <p className="text-card-foreground text-lg font-bold">{item.name}</p>
           <p className="text-muted-foreground text-sm">
-            ${item.total.toFixed(2)}
+            ${item.price.toFixed(2)} × {item.quantity} = $
+            {item.total.toFixed(2)}
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          {/* GREEN PRICE */}
           <div className="text-right">
             <p className="text-muted-foreground text-xs">Per person</p>
             <p className="text-primary font-bold">${perPerson.toFixed(2)}</p>
@@ -91,7 +127,7 @@ function BillSplitItems({ item, users, enabled, onUpdate }) {
         </div>
       </div>
 
-      {/* DETAILS (⚠️ single motion wrapper – NO FLASH) */}
+      {/* DETAILS */}
       <AnimatePresence initial={false}>
         {!enabled && details && (
           <motion.div

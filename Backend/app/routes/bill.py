@@ -3,8 +3,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from uuid import UUID
 from datetime import datetime
 
+from sqlalchemy import delete
 from sqlalchemy.orm import Session
 
+from app.schemas.bill_split import UpdateBillSplitsRequest
 from app.schemas.bill_item import BillReviewResponse
 from app.database import get_db
 from app.routes.auth import get_current_user
@@ -45,6 +47,7 @@ async def get_bill_review(
 
     # ---------------- ITEM TOTALS + PAYLOAD ----------------
     item_totals: dict[UUID, float] = {}
+
     items_payload = []
 
     for item in items:
@@ -58,6 +61,7 @@ async def get_bill_review(
                 "quantity": item.quantity,
                 "price": float(item.amount),  # type: ignore
                 "total": round(total, 2),  # type: ignore
+                "split_mode": item.split_mode,
                 "participants": [
                     {
                         "user_id": str(s.user_id),
@@ -161,3 +165,71 @@ async def toggle_bill_payment(
         "user_id": str(user_id),
         "is_paid": payment.is_paid,
     }
+
+
+@router.post("/{bill_id}/splits/save")
+async def update_bill_splits(
+    bill_id: UUID,
+    payload: UpdateBillSplitsRequest,
+    user: Annotated[Users, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    # ---------------- BILL ----------------
+    bill = db.query(Bill).filter(Bill.id == bill_id).first()
+    if not bill:
+        raise HTTPException(status_code=404, detail="Bill not found")
+
+    # only payer can edit
+    if bill.paid_by != user.id:  # type: ignore
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    # ---------------- PROCESS ITEMS ----------------
+    for item in payload.items:
+        db_item = (
+            db.query(BillItem)
+            .filter(
+                BillItem.id == item.id,
+                BillItem.bill_id == bill_id,
+            )
+            .first()
+        )
+
+        if not db_item:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Item {item.id} not found",
+            )
+
+        # ✅ UPDATE SPLIT MODE
+        db_item.split_mode = item.split_mode  # type: ignore
+
+        # ✅ VALIDATE PERCENTAGES
+        total = round(sum(p.percentage for p in item.participants), 2)
+        if total != 100:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Percentages for item {item.id} must total 100",
+            )
+
+        # ✅ CLEAR OLD SPLITS
+        db.execute(
+            delete(BillSplit).where(
+                BillSplit.bill_id == bill_id,
+                BillSplit.item_id == item.id,
+            )
+        )
+
+        # ✅ INSERT NEW SPLITS
+        for p in item.participants:
+            db.add(
+                BillSplit(
+                    bill_id=bill_id,
+                    item_id=item.id,
+                    user_id=p.user_id,
+                    percentage=p.percentage,
+                )
+            )
+
+    db.commit()
+
+    return {"status": "ok"}

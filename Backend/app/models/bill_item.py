@@ -1,5 +1,5 @@
 from app.database import Base
-from sqlalchemy import Column, String, Numeric, Integer, DateTime, ForeignKey
+from sqlalchemy import Column, Enum, String, Numeric, Integer, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -22,6 +22,12 @@ class BillItem(Base):
     quantity = Column(Integer, default=1, nullable=False)
 
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+
+    split_mode = Column(
+        Enum("equal", "percentage", name="split_mode"),
+        default="equal",
+        nullable=False,
+    )
 
     bill = relationship("Bill", back_populates="items")
     splits = relationship(
