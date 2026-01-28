@@ -1,43 +1,57 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import LoginPage, { action as loginAction } from "./pages/LoginPage";
-import SignupPage from "./pages/SignupPage";
+import SignupPage, { action as signupAction } from "./pages/SignupPage";
 import HomePage from "./pages/HomePage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import SettingsPage from "./pages/SettingsPage";
-import GroupDetails from "./pages/GroupDetails";
-import BillDetails from "./pages/BillDetails";
+import GroupDetails, {
+  loader as groupDetailsLoader,
+} from "./pages/GroupDetails";
+import BillDetails, { loader as billDetailsLoader } from "./pages/BillDetails";
 import ScanBill from "./pages/ScanBill";
-import SidebarLayout from "./pages/SideBarLayout";
-import { loader as logoutLoader } from "./pages/Logout";
+import NavbarLayout from "./pages/NavbarLayout";
 import { ThemeProvider } from "./context/ThemeContext";
 import RootPage from "./pages/RootPage";
+import { Toaster } from "sonner";
+import UserContextProvider from "./context/UserContext";
+import { action as joinGroupAction } from "./components/JoinGroup";
+import { action as createGroupAction } from "./components/CreateGroup";
+import { action as updateGroupAction } from "./components/UpdateGroup";
+import GroupPage, { loader as groupPageLoader } from "./pages/GroupPage";
+import BillSplit, { loader as billSplitLoader } from "./pages/BillSplit";
+import NotFound from "./pages/NotFound";
+import { authLoader, unAuthLoader } from "./pages/Auth";
 
 function App() {
   const router = createBrowserRouter([
     {
       path: "/",
       element: <RootPage />,
+      errorElement: <NotFound />,
       children: [
         {
-          path: "",
-          element: <LandingPage />,
+          loader: unAuthLoader,
+          children: [
+            {
+              path: "",
+              element: <LandingPage />,
+            },
+            {
+              path: "login",
+              element: <LoginPage />,
+              action: loginAction,
+            },
+            {
+              path: "Signup",
+              element: <SignupPage />,
+              action: signupAction,
+            },
+          ],
         },
         {
-          path: "login",
-          element: <LoginPage />,
-          action: loginAction,
-        },
-        {
-          path: "Signup",
-          element: <SignupPage />,
-        },
-        {
-          path: "logout",
-          loader: logoutLoader,
-        },
-        {
-          element: <SidebarLayout />,
+          element: <NavbarLayout />,
+          loader: authLoader,
           children: [
             {
               path: "home",
@@ -52,12 +66,24 @@ function App() {
               element: <SettingsPage />,
             },
             {
-              path: "group/:groupId",
-              element: <GroupDetails />,
+              path: "groups",
+              element: <GroupPage />,
+              loader: groupPageLoader,
             },
             {
-              path: "bill/:billId",
+              path: "groups/:groupId",
+              element: <GroupDetails />,
+              loader: groupDetailsLoader,
+            },
+            {
+              path: "groups/:groupId/bill/:billId/review",
               element: <BillDetails />,
+              loader: billDetailsLoader,
+            },
+            {
+              path: "groups/:groupId/bill/:billId/split",
+              element: <BillSplit />,
+              loader: billSplitLoader,
             },
             {
               path: "scan",
@@ -65,13 +91,28 @@ function App() {
             },
           ],
         },
+        {
+          path: "/join",
+          action: joinGroupAction,
+        },
+        {
+          path: "/create",
+          action: createGroupAction,
+        },
+        {
+          path: "groups/:groupId/update",
+          action: updateGroupAction,
+        },
       ],
     },
   ]);
 
   return (
     <ThemeProvider>
-      <RouterProvider router={router} />
+      <UserContextProvider>
+        <RouterProvider router={router} />
+        <Toaster richColors position="top-right" />
+      </UserContextProvider>
     </ThemeProvider>
   );
 }

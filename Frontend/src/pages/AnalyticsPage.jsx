@@ -1,5 +1,5 @@
 function AnalyticsPage() {
-    return ( <div>Analytics Page</div> );
+  return <div className="bg-background">asd</div>;
 }
 
 export default AnalyticsPage;

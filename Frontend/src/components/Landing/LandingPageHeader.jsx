@@ -10,7 +10,7 @@ function HomePageHeader() {
         <p>AI-Powered Bill Scanning</p>
       </div>
       <div className="mt-5 flex flex-col gap-6">
-        <p className="text-foreground m-auto w-2/3 text-center text-4xl leading-tight font-bold sm:w-3/5 sm:text-5xl md:text-6xl">
+        <p className="text-foreground m-auto w-2/3 text-center text-4xl leading-tight font-bold sm:w-3/5 sm:text-5xl md:text-6xl lg:max-w-200">
           Split Bills <span className="text-primary">Effortlessly</span> with
           Friends & Family
         </p>

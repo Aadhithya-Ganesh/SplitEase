@@ -1,5 +1,5 @@
 function SettingsPage() {
-  return <div>Settings Page</div>;
+  return <div className="bg-background"></div>;
 }
 
 export default SettingsPage;

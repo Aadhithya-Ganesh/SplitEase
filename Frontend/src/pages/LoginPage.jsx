@@ -1,64 +1,96 @@
 import { ThemeToggle } from "../components/ThemeToggle";
 import { ArrowRight, Lock, Receipt, Mail } from "lucide-react";
-import { Form, Link } from "react-router-dom";
+import { Form, Link, useNavigation } from "react-router-dom";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
+import { redirect } from "react-router-dom";
+import { toast } from "sonner";
+import useInput from "../hooks/useInput";
+import { validateEmail, validatePassword } from "../utils/FormValidation";
+import BackdropLoader from "./../utils/BackdropLoader";
+import { apiFetch } from "./../utils/Fetch";
 
 function LoginPage() {
+  const {
+    value: emailValue,
+    handleChange: handleEmailChange,
+    handleBlur: handleEmailBlur,
+    error: emailError,
+  } = useInput("", validateEmail);
+
+  const {
+    value: passwordValue,
+    handleChange: handlePasswordChange,
+    handleBlur: handlePasswordBlur,
+    error: passwordError,
+  } = useInput("", validatePassword);
+
+  const state = useNavigation();
+
   return (
-    <div className="bg-background h-screen">
-      <div className="flex justify-end p-4">
+    <div>
+      <div className="absolute top-5 right-5">
         <ThemeToggle />
       </div>
-      <div className="flex flex-col items-center gap-4">
-        <div className="bg-primary m-auto w-fit rounded-xl p-5">
-          <Receipt className="text-background" size={30} />
-        </div>
-        <p className="text-foreground text-center text-3xl font-bold">
-          Welcome Back
-        </p>
-        <p className="text-muted-foreground text-center">
-          Sign in to continue to SplitEase
-        </p>
-        <Form
-          method="post"
-          className="bg-card border-border flex w-4/5 flex-col gap-6 rounded-lg border px-6 py-8 sm:w-3/4 md:w-2/4 lg:w-2/6"
-        >
-          <Input
-            id="email"
-            type="email"
-            name="email"
-            label="Email"
-            icon={<Mail />}
-            placeholder="you@example.com"
-            className="text-foreground mt-3 h-12 pl-10"
-          />
-
-          <Input
-            id="password"
-            type="password"
-            name="password"
-            label="Password"
-            icon={<Lock />}
-            placeholder="••••••••"
-            className=""
-          />
-
-          <Button
-            type="submit"
-            className="bg-primary mt-4 w-full border-none text-white"
-          >
-            <p>Sign In</p>
-            <ArrowRight size={15} />
-          </Button>
-          <p className="text-muted-foreground text-center font-semibold">
-            Don't have an account?{" "}
-            <Link to="/signup" className="text-primary hover:underline">
-              Sign up
-            </Link>
+      <div className="bg-background flex min-h-screen items-center justify-center p-5">
+        <div className="flex w-full flex-col items-center gap-4">
+          <div className="bg-primary m-auto w-fit rounded-xl p-5">
+            <Receipt className="text-background" size={30} />
+          </div>
+          <p className="text-foreground text-center text-3xl font-bold">
+            Welcome Back
           </p>
-        </Form>
+          <p className="text-muted-foreground text-center">
+            Sign in to continue to SplitEase
+          </p>
+          <Form
+            method="post"
+            className="bg-card border-border flex w-4/5 flex-col gap-6 rounded-lg border px-6 py-8 sm:w-3/4 md:w-2/4 lg:w-2/6"
+          >
+            <Input
+              id="email"
+              type="email"
+              name="email"
+              label="Email"
+              value={emailValue}
+              error={emailError}
+              icon={<Mail />}
+              placeholder="you@example.com"
+              onChange={handleEmailChange}
+              onBlur={handleEmailBlur}
+            />
+
+            <Input
+              id="password"
+              type="password"
+              name="password"
+              label="Password"
+              value={passwordValue}
+              error={passwordError}
+              icon={<Lock />}
+              placeholder="••••••••"
+              onChange={handlePasswordChange}
+              onBlur={handlePasswordBlur}
+            />
+
+            <Button
+              type="submit"
+              disabled={emailError || passwordError}
+              className="bg-primary mt-4 w-full border-none text-white disabled:opacity-50"
+            >
+              <p>Sign In</p>
+              <ArrowRight size={15} />
+            </Button>
+            <p className="text-muted-foreground text-center font-semibold">
+              Don't have an account?{" "}
+              <Link to="/signup" className="text-primary hover:underline">
+                Sign up
+              </Link>
+            </p>
+          </Form>
+        </div>
       </div>
+      {state.state === "submitting" && <BackdropLoader />}
     </div>
   );
 }
@@ -67,7 +99,36 @@ export default LoginPage;
 
 export async function action({ request }) {
   const data = await request.formData();
-  console.log(request.method);
-  console.log(data.get("email"));
-  console.log(data.get("password"));
+
+  const username = data.get("email");
+  const password = data.get("password");
+
+  if (validateEmail(username) || validatePassword(password)) {
+    throw new Response(JSON.stringify({ message: "Invalid credentials" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const formBody = new URLSearchParams();
+  formBody.append("username", username);
+  formBody.append("password", password);
+
+  const response = await apiFetch("/auth/login", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: formBody,
+  });
+
+  const tokenData = await response.json();
+
+  // store token
+  localStorage.setItem("token", tokenData.access_token);
+  window.location.href = "/home";
+
+  toast.success("Login Successful");
+
+  return redirect("/home");
 }
