@@ -46,7 +46,6 @@ function BillSplitSummary({ items, users }) {
   );
 
   async function handleSave() {
-    console.log(items);
     const response = await apiFetch(`/api/bills/${billId}/splits/save`, {
       method: "POST",
       body: {

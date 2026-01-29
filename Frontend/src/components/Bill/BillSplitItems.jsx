@@ -12,6 +12,9 @@ function BillSplitItems({ item, users, enabled, onUpdate }) {
   // 🔒 local working copy
   const [participants, setParticipants] = useState([]);
 
+  /**
+   * INIT FROM ITEM
+   */
   useEffect(() => {
     setParticipants(
       item.participants.map((p) => ({
@@ -21,55 +24,87 @@ function BillSplitItems({ item, users, enabled, onUpdate }) {
     );
   }, [item.id]);
 
-  const selectedCount = useMemo(
-    () => participants.filter((p) => p.selected).length,
+  /**
+   * MEMOS
+   */
+  const selected = useMemo(
+    () => participants.filter((p) => p.selected),
     [participants],
   );
 
-  const perPerson = useMemo(() => {
-    if (selectedCount === 0) return 0;
-
-    if (splitMode === "equal") {
-      return item.total / selectedCount;
-    }
-
-    // percentage mode → average selected share
-    const selected = participants.filter((p) => p.selected);
-    const avgPercent =
-      selected.reduce((sum, p) => sum + p.percentage, 0) / selected.length;
-
-    return (item.total * avgPercent) / 100;
-  }, [splitMode, participants, item.total, selectedCount]);
+  const selectedCount = selected.length;
 
   const selectedIds = useMemo(
-    () =>
-      participants
-        .filter((p) => p.selected)
-        .map((p) => p.user_id)
-        .join(","),
-    [participants],
+    () => selected.map((p) => p.user_id).join(","),
+    [selected],
   );
 
   /**
-   * ⚖️ AUTO-DISTRIBUTE (ONLY if empty)
+   * 🚨 HARD RULE:
+   * Deselected users MUST have 0%
+   */
+  useEffect(() => {
+    setParticipants((prev) =>
+      prev.map((p) => (p.selected ? p : { ...p, percentage: 0 })),
+    );
+  }, [selectedIds]);
+
+  /**
+   * ⚖️ EQUAL SPLIT — WHOLE NUMBERS ONLY
+   */
+  useEffect(() => {
+    if (splitMode !== "equal") return;
+    if (!selectedCount) return;
+
+    const base = Math.floor(100 / selectedCount);
+    const remainder = 100 - base * selectedCount;
+
+    setParticipants((prev) => {
+      let extra = remainder;
+
+      return prev.map((p) => {
+        if (!p.selected) return p;
+
+        const add = extra > 0 ? 1 : 0;
+        if (extra > 0) extra--;
+
+        return {
+          ...p,
+          percentage: base + add,
+        };
+      });
+    });
+  }, [splitMode, selectedIds, selectedCount]);
+
+  /**
+   * ⚖️ PERCENTAGE MODE — AUTO-FILL ONLY IF EMPTY
    */
   useEffect(() => {
     if (splitMode !== "percentage") return;
-
-    const selected = participants.filter((p) => p.selected);
-    if (!selected.length) return;
+    if (!selectedCount) return;
 
     const total = selected.reduce((sum, p) => sum + p.percentage, 0);
-    if (total > 0) return; // 👈 don't override user edits
+    if (total > 0) return; // respect user edits
 
-    const equal = +(100 / selected.length).toFixed(2);
+    const base = Math.floor(100 / selectedCount);
+    const remainder = 100 - base * selectedCount;
 
-    setParticipants((prev) =>
-      prev.map((p) =>
-        p.selected ? { ...p, percentage: equal } : { ...p, percentage: 0 },
-      ),
-    );
-  }, [splitMode, selectedIds]);
+    setParticipants((prev) => {
+      let extra = remainder;
+
+      return prev.map((p) => {
+        if (!p.selected) return p;
+
+        const add = extra > 0 ? 1 : 0;
+        if (extra > 0) extra--;
+
+        return {
+          ...p,
+          percentage: base + add,
+        };
+      });
+    });
+  }, [splitMode, selectedIds, selectedCount]);
 
   /**
    * ⬆️ SYNC UP
@@ -85,7 +120,6 @@ function BillSplitItems({ item, users, enabled, onUpdate }) {
 
   useEffect(() => {
     const serialized = JSON.stringify(payload);
-
     if (lastPayload.current === serialized) return;
 
     lastPayload.current = serialized;
@@ -104,15 +138,14 @@ function BillSplitItems({ item, users, enabled, onUpdate }) {
         <div>
           <p className="text-card-foreground text-lg font-bold">{item.name}</p>
           <p className="text-muted-foreground text-sm">
-            ${item.price.toFixed(2)} × {item.quantity} = $
-            {item.total.toFixed(2)}
+            ${item.price.toFixed(2)} × {item.quantity}
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <div className="text-right">
-            <p className="text-muted-foreground text-xs">Per person</p>
-            <p className="text-primary font-bold">${perPerson.toFixed(2)}</p>
+            <p className="text-muted-foreground text-xs">Total</p>
+            <p className="text-primary font-bold">${item.total.toFixed(2)}</p>
           </div>
 
           {!enabled && (

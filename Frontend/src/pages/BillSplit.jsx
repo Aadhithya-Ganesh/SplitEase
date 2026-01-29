@@ -13,6 +13,30 @@ function BillSplit() {
   const { groupId, billId } = useParams();
   const { billDetails } = useLoaderData();
 
+  function applyGlobalEqualSplit(items, users) {
+    const count = users.length;
+    const base = Math.floor(100 / count);
+    const remainder = 100 - base * count;
+
+    return items.map((item) => {
+      let extra = remainder;
+
+      return {
+        ...item,
+        split_mode: "equal",
+        participants: users.map((u) => {
+          const add = extra > 0 ? 1 : 0;
+          if (extra > 0) extra--;
+
+          return {
+            user_id: u.id,
+            percentage: base + add,
+          };
+        }),
+      };
+    });
+  }
+
   return (
     <div className="flex flex-col gap-8">
       <Link to={`/groups/${groupId}/bill/${billId}/review`} className="w-fit">
@@ -25,15 +49,10 @@ function BillSplit() {
       <Suspense fallback={<BackdropLoader />}>
         <Await resolve={billDetails}>
           {(data) => {
-            console.log(data);
             const [items, setItems] = useState(data.items);
-            const [enabled, setEnabled] = useState(() => {
-              return data.items.every(
-                (item) =>
-                  item.splitMode === "equal" &&
-                  item.participants.length === data.members.length,
-              );
-            });
+            const [enabled, setEnabled] = useState(() =>
+              data.items.every((item) => item.split_mode === "equal"),
+            );
 
             return (
               <>
@@ -60,7 +79,19 @@ function BillSplit() {
                       All items split among all {data.members.length} members
                     </p>
                   </div>
-                  <Switch checked={enabled} onChange={setEnabled} size="md" />
+                  <Switch
+                    checked={enabled}
+                    size="md"
+                    onChange={(value) => {
+                      setEnabled(value);
+
+                      if (value) {
+                        setItems((prev) =>
+                          applyGlobalEqualSplit(prev, data.members),
+                        );
+                      }
+                    }}
+                  />
                 </div>
                 <div>
                   <AnimatePresence>
