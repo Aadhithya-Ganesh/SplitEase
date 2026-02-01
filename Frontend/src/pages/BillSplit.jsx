@@ -51,7 +51,11 @@ function BillSplit() {
           {(data) => {
             const [items, setItems] = useState(data.items);
             const [enabled, setEnabled] = useState(() =>
-              data.items.every((item) => item.split_mode === "equal"),
+              data.items.every((item) => {
+                if (item.split_mode !== "equal") return false;
+
+                return item.participants.every((p) => p.percentage > 0);
+              }),
             );
 
             return (
