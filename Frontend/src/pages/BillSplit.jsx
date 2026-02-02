@@ -2,7 +2,7 @@ import { Await, Link, useLoaderData, useParams } from "react-router-dom";
 import Button from "../components/ui/Button";
 import { Divide, DollarSign, MoveLeft, Users } from "lucide-react";
 import Switch from "./../components/ui/Switch";
-import { Suspense, useState } from "react";
+import { Suspense, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import BillSplitItems from "../components/Bill/BillSplitItems";
 import BillSplitSummary from "../components/Bill/BillSplitSummary";
@@ -12,6 +12,7 @@ import BackdropLoader from "../utils/BackdropLoader";
 function BillSplit() {
   const { groupId, billId } = useParams();
   const { billDetails } = useLoaderData();
+  const previousItemsRef = useRef(null);
 
   function applyGlobalEqualSplit(items, users) {
     const count = users.length;
@@ -53,7 +54,6 @@ function BillSplit() {
             const [enabled, setEnabled] = useState(() =>
               data.items.every((item) => {
                 if (item.split_mode !== "equal") return false;
-
                 return item.participants.every((p) => p.percentage > 0);
               }),
             );
@@ -90,9 +90,16 @@ function BillSplit() {
                       setEnabled(value);
 
                       if (value) {
-                        setItems((prev) =>
-                          applyGlobalEqualSplit(prev, data.members),
-                        );
+                        // 🔒 SAVE current custom state
+                        previousItemsRef.current = items;
+
+                        // 🔄 APPLY global equal split
+                        setItems(applyGlobalEqualSplit(items, data.members));
+                      } else {
+                        // 🔁 RESTORE previous custom state
+                        if (previousItemsRef.current) {
+                          setItems(previousItemsRef.current);
+                        }
                       }
                     }}
                   />

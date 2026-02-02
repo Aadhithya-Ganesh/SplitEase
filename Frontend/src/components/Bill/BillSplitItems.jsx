@@ -77,34 +77,67 @@ function BillSplitItems({ item, users, enabled, onUpdate }) {
   }, [splitMode, selectedIds, selectedCount]);
 
   /**
-   * ⚖️ PERCENTAGE MODE — AUTO-FILL ONLY IF EMPTY
+   * ⚖️ PERCENTAGE MODE — RECALCULATE ON SELECT / DESELECT
    */
   useEffect(() => {
     if (splitMode !== "percentage") return;
     if (!selectedCount) return;
 
-    const total = selected.reduce((sum, p) => sum + p.percentage, 0);
-    if (total > 0) return; // respect user edits
+    const selectedTotal = selected.reduce((sum, p) => sum + p.percentage, 0);
 
-    const base = Math.floor(100 / selectedCount);
-    const remainder = 100 - base * selectedCount;
+    const hasZeroSelected = selected.some((p) => p.percentage === 0);
 
-    setParticipants((prev) => {
-      let extra = remainder;
+    // 🔁 CASE 1: newly selected user OR all zeros → equal split
+    if (selectedTotal === 0 || hasZeroSelected) {
+      const base = Math.floor(100 / selectedCount);
+      const remainder = 100 - base * selectedCount;
 
-      return prev.map((p) => {
-        if (!p.selected) return p;
+      setParticipants((prev) => {
+        let extra = remainder;
 
-        const add = extra > 0 ? 1 : 0;
-        if (extra > 0) extra--;
+        return prev.map((p) => {
+          if (!p.selected) return p;
 
+          const add = extra > 0 ? 1 : 0;
+          if (extra > 0) extra--;
+
+          return {
+            ...p,
+            percentage: base + add,
+          };
+        });
+      });
+
+      return;
+    }
+
+    // 🔁 CASE 2: proportional redistribution
+    let used = 0;
+
+    const redistributed = selected.map((p, idx) => {
+      if (idx === selected.length - 1) {
         return {
           ...p,
-          percentage: base + add,
+          percentage: 100 - used,
         };
-      });
+      }
+
+      const value = Math.floor((p.percentage / selectedTotal) * 100);
+      used += value;
+
+      return {
+        ...p,
+        percentage: value,
+      };
     });
-  }, [splitMode, selectedIds, selectedCount]);
+
+    setParticipants((prev) =>
+      prev.map((p) => {
+        const updated = redistributed.find((r) => r.user_id === p.user_id);
+        return updated ?? p;
+      }),
+    );
+  }, [splitMode, selectedIds]);
 
   /**
    * ⬆️ SYNC UP
