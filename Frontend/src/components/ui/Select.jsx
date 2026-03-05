@@ -1,5 +1,6 @@
 import { ChevronDown } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import { AnimatePresence, motion } from "motion/react";
 
 function Select({
   value,
@@ -32,12 +33,12 @@ function Select({
   };
 
   return (
-    <div ref={ref} className="relative w-fit min-w-35">
+    <div ref={ref} className="relative w-full">
       {/* Trigger */}
       <button
         disabled={disabled}
         onClick={() => setOpen((o) => !o)}
-        className={` ${sizeClasses[size]} border-border bg-card text-foreground flex w-full items-center justify-between gap-2 rounded-lg border font-bold transition ${disabled ? "cursor-not-allowed opacity-50" : "hover:bg-accent"} `}
+        className={` ${sizeClasses[size]} border-border bg-background text-foreground flex w-full items-center justify-between gap-2 rounded-lg border font-bold transition ${disabled ? "cursor-not-allowed opacity-50" : "hover:bg-accent"} `}
       >
         <span>{selected ? selected.label : placeholder}</span>
         <ChevronDown
@@ -46,23 +47,30 @@ function Select({
         />
       </button>
 
-      {/* Dropdown */}
-      {open && !disabled && (
-        <div className="border-border bg-popover absolute z-50 mt-2 w-full overflow-hidden rounded-lg border shadow-lg">
-          {options.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => {
-                onChange(opt.value);
-                setOpen(false);
-              }}
-              className={`hover:bg-accent text-foreground w-full px-4 py-2 text-left text-sm font-bold ${opt.value === value ? "bg-accent font-medium" : ""} `}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      )}
+      <AnimatePresence>
+        {/* Dropdown */}
+        {open && !disabled && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="border-border bg-background absolute z-50 mt-2 w-full overflow-hidden rounded-lg border shadow-lg"
+          >
+            {options.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => {
+                  onChange(opt.value);
+                  setOpen(false);
+                }}
+                className={`hover:bg-accent text-foreground w-full px-4 py-2 text-left text-sm font-bold ${opt.value === value ? "bg-accent font-medium" : ""} `}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

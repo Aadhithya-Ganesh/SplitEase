@@ -3,7 +3,9 @@ import LandingPage from "./pages/LandingPage";
 import LoginPage, { action as loginAction } from "./pages/LoginPage";
 import SignupPage, { action as signupAction } from "./pages/SignupPage";
 import HomePage from "./pages/HomePage";
-import AnalyticsPage from "./pages/AnalyticsPage";
+import AnalyticsPage, {
+  loader as analyticsLoader,
+} from "./pages/AnalyticsPage";
 import SettingsPage from "./pages/SettingsPage";
 import GroupDetails, {
   loader as groupDetailsLoader,
@@ -60,6 +62,7 @@ function App() {
             {
               path: "analytics",
               element: <AnalyticsPage />,
+              loader: analyticsLoader,
             },
             {
               path: "settings",

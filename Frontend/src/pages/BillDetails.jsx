@@ -70,10 +70,12 @@ function BillDetails() {
                     to={`/groups/${groupId}/bill/${resolvedBills.id}/split`}
                     className="w-full"
                   >
-                    <Button className="bg-primary w-full py-4">
-                      <p>Split Bill</p>
-                      <MoveRight size={18} />
-                    </Button>
+                    {user?.id === resolvedBills.paid_by.id && (
+                      <Button className="bg-primary w-full py-4">
+                        <p>Split Bill</p>
+                        <MoveRight size={18} />
+                      </Button>
+                    )}
                   </Link>
                 </div>
               </>
