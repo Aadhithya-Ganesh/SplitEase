@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import Logo from "./Logo.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, PlusIcon } from "lucide-react";
 import Button from "./ui/Button.jsx";
 import { useContext } from "react";
 import { UserContext } from "../context/UserContext.jsx";
@@ -50,11 +50,16 @@ function Navbar({ mode }) {
 
           <div className="flex items-center gap-2">
             {/* Username (desktop only) */}
+            <Link to={"/scan"}>
+              <Button className="bg-primary text-primary-foreground">
+                <PlusIcon />
+              </Button>
+            </Link>
 
             <ThemeToggle />
 
             {/* User menu */}
-            <div className="relative">
+            <div className="relative hidden md:block">
               <button
                 ref={triggerRef}
                 onClick={() => setUserMenuOpen((prev) => !prev)}
