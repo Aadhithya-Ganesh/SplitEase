@@ -203,7 +203,7 @@ function BillDetailsItemsList({ items, setItemsList, members = null }) {
           </Button>
         </div>
       </div>
-      <div className="bg-card border-border flex justify-between rounded-xl border p-10">
+      <div className="bg-card border-border mt-5 flex justify-between rounded-xl border p-10">
         <p className="text-card-foreground text-3xl font-bold">Total</p>
         <p className="text-primary text-3xl font-bold">${total.toFixed(2)}</p>
       </div>

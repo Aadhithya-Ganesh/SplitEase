@@ -11,7 +11,7 @@ import GroupDetails, {
   loader as groupDetailsLoader,
 } from "./pages/GroupDetails";
 import BillDetails, { loader as billDetailsLoader } from "./pages/BillDetails";
-import ScanBill from "./pages/ScanBill";
+import ScanBill, { loader as scanLoader } from "./pages/ScanBill";
 import NavbarLayout from "./pages/NavbarLayout";
 import { ThemeProvider } from "./context/ThemeContext";
 import RootPage from "./pages/RootPage";
@@ -91,6 +91,7 @@ function App() {
             {
               path: "scan",
               element: <ScanBill />,
+              loader: scanLoader,
             },
           ],
         },

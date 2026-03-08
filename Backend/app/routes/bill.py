@@ -16,8 +16,96 @@ from app.models.bills import Bill
 from app.models.bill_item import BillItem
 from app.models.bill_split import BillSplit
 from app.models.bill_payments import BillPayment
+from app.schemas.bill import CreateBillRequest
+from app.models.users_groups import UserGroup
 
 router = APIRouter(prefix="/api/bills", tags=["bill"])
+
+
+@router.post("")
+async def create_bill(
+    payload: CreateBillRequest,
+    user: Annotated[Users, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
+
+    try:
+        # ---------------- CALCULATE TOTAL ----------------
+        total_amount = 0
+        for item in payload.items:
+            total_amount += item.amount * item.quantity
+
+        # ---------------- CREATE BILL ----------------
+        bill = Bill(
+            group_id=payload.group_id,
+            title=payload.title,
+            total_amount=round(total_amount, 2),
+            paid_by=user.id,
+        )
+
+        db.add(bill)
+        db.flush()  # generate bill.id
+
+        # ---------------- GET GROUP MEMBERS ----------------
+        members = (
+            db.query(Users)
+            .join(UserGroup)
+            .filter(UserGroup.group_id == payload.group_id)
+            .all()
+        )
+
+        if not members:
+            raise HTTPException(status_code=400, detail="Group has no members")
+
+        split_percentage = 100 / len(members)
+
+        # ---------------- CREATE ITEMS + SPLITS ----------------
+        for item in payload.items:
+            db_item = BillItem(
+                bill_id=bill.id,
+                name=item.name,
+                amount=item.amount,
+                quantity=item.quantity,
+                split_mode=item.split_mode,
+            )
+
+            db.add(db_item)
+            db.flush()  # generate item.id
+
+            # create equal splits for each member
+            for member in members:
+                db.add(
+                    BillSplit(
+                        bill_id=bill.id,
+                        item_id=db_item.id,
+                        user_id=member.id,
+                        percentage=split_percentage,
+                    )
+                )
+
+        # ---------------- CREATE PAYMENT RECORDS ----------------
+        for member in members:
+            db.add(
+                BillPayment(
+                    bill_id=bill.id,
+                    user_id=member.id,
+                    is_paid=(member.id == user.id),
+                    paid_at=datetime.utcnow() if member.id == user.id else None,  # type: ignore
+                )
+            )
+
+        db.commit()
+
+        return {
+            "id": str(bill.id),
+            "title": bill.title,
+            "total_amount": bill.total_amount,
+            "status": "created",
+        }
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # --------------------------------------------------

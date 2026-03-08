@@ -38,9 +38,9 @@ function Select({
       <button
         disabled={disabled}
         onClick={() => setOpen((o) => !o)}
-        className={` ${sizeClasses[size]} border-border bg-background text-foreground flex w-full items-center justify-between gap-2 rounded-lg border font-bold transition ${disabled ? "cursor-not-allowed opacity-50" : "hover:bg-accent"} `}
+        className={` ${sizeClasses[size]} border-border bg-background text-foreground flex w-full items-center justify-between gap-2 rounded-lg border py-3 font-bold transition ${disabled ? "cursor-not-allowed opacity-50" : "hover:bg-accent"} `}
       >
-        <span>{selected ? selected.label : placeholder}</span>
+        <span className="ml-7">{selected ? selected.label : placeholder}</span>
         <ChevronDown
           size={16}
           className={`transition-transform ${open ? "rotate-180" : ""}`}
