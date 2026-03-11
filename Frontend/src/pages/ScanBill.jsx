@@ -8,11 +8,13 @@ import BillDetailsItemList from "../components/Bill/BillDetailsItemList";
 import Input from "../components/ui/Input";
 import useInput from "../hooks/useInput";
 import Select from "../components/ui/Select";
-import { Await, Link, useLoaderData } from "react-router-dom";
+import { Await, Link, useLoaderData, useNavigate } from "react-router-dom";
 import Button from "../components/ui/Button";
+import DatePicker from "../components/ui/DatePicker";
 
 function ScanBill() {
   const { groups } = useLoaderData();
+  const navigate = useNavigate();
 
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
@@ -20,6 +22,7 @@ function ScanBill() {
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState([]);
   const [group, setGroup] = useState("");
+  const [date, setDate] = useState("");
 
   const {
     value: billName,
@@ -87,6 +90,9 @@ function ScanBill() {
       const payload = {
         group_id: group,
         title: billName,
+        created_at: date
+          ? new Date(date).toISOString()
+          : new Date().toISOString(),
         items: items.map((item) => ({
           name: item.name,
           amount: item.price,
@@ -109,6 +115,7 @@ function ScanBill() {
       }
 
       toast.success("Bill created successfully");
+      return navigate("/groups/" + group);
     } catch (err) {
       toast.error("Failed to create bill");
     } finally {
@@ -217,20 +224,28 @@ function ScanBill() {
                       onBlur={handleBillNameBlur}
                       error={billNameError}
                     />
-                    <div>
-                      <p className="text-foreground mb-3 text-sm font-bold">
-                        Select Group
-                      </p>
-                      <Select
-                        value={group}
-                        onChange={setGroup}
-                        options={groups.map((group) => ({
-                          label: group.name,
-                          value: group.id,
-                        }))}
-                        size="sm"
-                        placeholder="Choose a Group"
-                      />
+                    <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
+                      <div className="w-full">
+                        <p className="text-foreground mb-3 text-sm font-bold">
+                          Select Group
+                        </p>
+                        <Select
+                          value={group}
+                          onChange={setGroup}
+                          options={groups.map((group) => ({
+                            label: group.name,
+                            value: group.id,
+                          }))}
+                          size="sm"
+                          placeholder="Choose a Group"
+                        />
+                      </div>
+                      <div>
+                        <p className="text-foreground mb-3 text-sm font-bold">
+                          Select Date
+                        </p>
+                        <DatePicker value={date} onChange={setDate} />
+                      </div>
                     </div>
                   </div>
                 </div>

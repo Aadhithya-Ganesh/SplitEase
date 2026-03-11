@@ -44,4 +44,9 @@ class BillItemCreate(BaseModel):
 class CreateBillRequest(BaseModel):
     group_id: UUID
     title: str
+    created_at: datetime
     items: List[BillItemCreate]
+
+
+class UpdateBillRequest(BaseModel):
+    title: str

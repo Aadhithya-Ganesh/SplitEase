@@ -1,17 +1,47 @@
 import Button from "./../components/ui/Button";
-import { MoveLeft, MoveRight } from "lucide-react";
-import { useLoaderData, Link, Await, useParams } from "react-router-dom";
+import { MoveLeft, MoveRight, Pencil, Trash } from "lucide-react";
+import {
+  useLoaderData,
+  Link,
+  Await,
+  useParams,
+  useNavigate,
+} from "react-router-dom";
 import BillDetailsSplitSummary from "../components/Bill/BillDetailsSplitSummary";
 import BillDetailsItemsList from "../components/Bill/BillDetailsItemList";
 import { Suspense, useContext, useState } from "react";
 import BackdropLoader from "../utils/BackdropLoader";
 import { UserContext } from "../context/UserContext";
 import { apiFetch } from "../utils/Fetch";
+import { toast } from "sonner";
+import Modal from "../components/ui/Modal";
+import UpdateBill from "../components/UpdateBill";
 
 function BillDetails() {
   const { user } = useContext(UserContext);
-  const { groupId } = useParams();
+  const { groupId, billId } = useParams();
   const { billDetails } = useLoaderData();
+
+  const navigate = useNavigate();
+  const [updateBillModal, setUpdateBillModal] = useState(false);
+
+  const updateBillOnSuccess = () => {
+    setUpdateBillModal(false);
+  };
+
+  const handleDelete = async () => {
+    const response = await apiFetch(`/api/bills/${billId}`, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      toast.error("Failed to delete");
+    }
+
+    toast.success("Deleted Successfully");
+
+    return navigate("/groups/" + groupId);
+  };
 
   return (
     <div className="flex flex-col gap-5">
@@ -35,9 +65,25 @@ function BillDetails() {
               <>
                 <div className="my-6">
                   <div className="text-foreground flex items-center justify-between">
-                    <p className="text-2xl font-bold md:text-4xl">
-                      {resolvedBills.title}
-                    </p>
+                    <div className="flex gap-4">
+                      <p className="text-2xl font-bold md:text-4xl">
+                        {resolvedBills.title}
+                      </p>
+                      <button
+                        onClick={() => setUpdateBillModal(true)}
+                        className="hover:bg-accent text-muted-foreground hover:text-foreground rounded-lg p-2 transition"
+                        title="Edit bill"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        className="hover:bg-destructive/10 text-destructive rounded-lg p-2 transition"
+                        title="Delete bill"
+                        onClick={handleDelete}
+                      >
+                        <Trash size={16} />
+                      </button>
+                    </div>
                     <div className="text-right font-semibold md:text-xl">
                       <p className="text-muted-foreground">Paid by</p>
                       <p>
@@ -78,6 +124,16 @@ function BillDetails() {
                     )}
                   </Link>
                 </div>
+                <Modal
+                  open={updateBillModal}
+                  onClose={() => setUpdateBillModal(false)}
+                  heading="Edit Bill"
+                >
+                  <UpdateBill
+                    billId={resolvedBills.id}
+                    onSuccess={updateBillOnSuccess}
+                  />
+                </Modal>
               </>
             );
           }}

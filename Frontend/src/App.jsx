@@ -20,6 +20,8 @@ import UserContextProvider from "./context/UserContext";
 import { action as joinGroupAction } from "./components/JoinGroup";
 import { action as createGroupAction } from "./components/CreateGroup";
 import { action as updateGroupAction } from "./components/UpdateGroup";
+import { action as updateBillAction } from "./components/UpdateBill";
+import { action as aiChatAction } from "./components/Analytics/AIChatSection";
 import GroupPage, { loader as groupPageLoader } from "./pages/GroupPage";
 import BillSplit, { loader as billSplitLoader } from "./pages/BillSplit";
 import NotFound from "./pages/NotFound";
@@ -106,6 +108,14 @@ function App() {
         {
           path: "groups/:groupId/update",
           action: updateGroupAction,
+        },
+        {
+          path: "bills/:billId/update",
+          action: updateBillAction,
+        },
+        {
+          path: "analytics/ai-chat",
+          action: aiChatAction,
         },
       ],
     },

@@ -16,7 +16,7 @@ from app.models.bills import Bill
 from app.models.bill_item import BillItem
 from app.models.bill_split import BillSplit
 from app.models.bill_payments import BillPayment
-from app.schemas.bill import CreateBillRequest
+from app.schemas.bill import CreateBillRequest, UpdateBillRequest
 from app.models.users_groups import UserGroup
 
 router = APIRouter(prefix="/api/bills", tags=["bill"])
@@ -41,6 +41,7 @@ async def create_bill(
             title=payload.title,
             total_amount=round(total_amount, 2),
             paid_by=user.id,
+            created_at=payload.created_at,
         )
 
         db.add(bill)
@@ -318,6 +319,47 @@ async def update_bill_splits(
                 )
             )
 
+    db.commit()
+
+    return {"status": "ok"}
+
+
+@router.delete("/{bill_id}")
+async def delete_bill(
+    bill_id: UUID,
+    user: Annotated[Users, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    bill = db.query(Bill).filter(Bill.id == bill_id).first()
+    if not bill:
+        raise HTTPException(status_code=404, detail="Bill not found")
+
+    # only payer can delete
+    if bill.paid_by != user.id:  # type: ignore
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    db.delete(bill)
+    db.commit()
+
+    return {"status": "ok"}
+
+
+@router.put("/{bill_id}/update")
+async def update_bill(
+    bill_id: UUID,
+    payload: UpdateBillRequest,
+    user: Annotated[Users, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    bill = db.query(Bill).filter(Bill.id == bill_id).first()
+    if not bill:
+        raise HTTPException(status_code=404, detail="Bill not found")
+
+    # only payer can edit
+    if bill.paid_by != user.id:  # type: ignore
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    bill.title = payload.title  # type: ignore
     db.commit()
 
     return {"status": "ok"}
