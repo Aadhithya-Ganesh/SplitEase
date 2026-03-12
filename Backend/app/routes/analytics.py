@@ -1,8 +1,12 @@
+import asyncio
+
 from fastapi import APIRouter, Depends
 from typing import Annotated
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import extract
 from decimal import Decimal
+from openai import OpenAI
 
 from app.database import get_db
 from app.routes.auth import get_current_user
@@ -12,9 +16,11 @@ from app.models.bills import Bill
 from app.models.bill_item import BillItem
 from app.models.bill_split import BillSplit
 
-from app.schemas.analytics import AnalyticsResponse
+from app.schemas.analytics import AnalyticsResponse, AIChatQuestion
 
 router = APIRouter(prefix="/api/analytics", tags=["analytics"])
+
+openai = OpenAI()
 
 
 @router.post("/info", response_model=AnalyticsResponse)
@@ -75,3 +81,26 @@ def get_info(
         "avg_per_bill": float(avg_per_bill),
         "monthly_spending": monthly_spending,
     }
+
+
+@router.post("/ai-chat")
+async def ai_chat(question: AIChatQuestion):
+
+    stream = openai.chat.completions.create(
+        model="gpt-4.1-mini",
+        messages=[{"role": "user", "content": question.question}],
+        stream=True,
+    )
+
+    async def event_stream():
+        for chunk in stream:
+            content = chunk.choices[0].delta.content
+            if content:
+                yield content
+                await asyncio.sleep(0)
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/plain",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )

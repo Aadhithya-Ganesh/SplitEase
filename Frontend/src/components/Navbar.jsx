@@ -50,7 +50,7 @@ function Navbar({ mode }) {
 
           <div className="flex items-center gap-2">
             {/* Username (desktop only) */}
-            <Link to={"/scan"}>
+            <Link to={"/bill/add"}>
               <Button className="bg-primary text-primary-foreground">
                 <PlusIcon />
               </Button>

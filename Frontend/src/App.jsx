@@ -21,9 +21,10 @@ import { action as joinGroupAction } from "./components/JoinGroup";
 import { action as createGroupAction } from "./components/CreateGroup";
 import { action as updateGroupAction } from "./components/UpdateGroup";
 import { action as updateBillAction } from "./components/UpdateBill";
-import { action as aiChatAction } from "./components/Analytics/AIChatSection";
 import GroupPage, { loader as groupPageLoader } from "./pages/GroupPage";
 import BillSplit, { loader as billSplitLoader } from "./pages/BillSplit";
+import BillManual from "./pages/BillManual";
+import AddBill from "./pages/AddBill";
 import NotFound from "./pages/NotFound";
 import { authLoader, unAuthLoader } from "./pages/Auth";
 
@@ -91,7 +92,16 @@ function App() {
               loader: billSplitLoader,
             },
             {
-              path: "scan",
+              path: "bill/manual",
+              element: <BillManual />,
+              loader: scanLoader,
+            },
+            {
+              path: "bill/add",
+              element: <AddBill />,
+            },
+            {
+              path: "bill/scan",
               element: <ScanBill />,
               loader: scanLoader,
             },
@@ -112,10 +122,6 @@ function App() {
         {
           path: "bills/:billId/update",
           action: updateBillAction,
-        },
-        {
-          path: "analytics/ai-chat",
-          action: aiChatAction,
         },
       ],
     },

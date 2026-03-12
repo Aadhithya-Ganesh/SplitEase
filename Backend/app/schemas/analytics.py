@@ -12,3 +12,7 @@ class AnalyticsResponse(BaseModel):
     total_bills: int
     avg_per_bill: float
     monthly_spending: List[MonthlySpending]
+
+
+class AIChatQuestion(BaseModel):
+    question: str

@@ -39,7 +39,7 @@ function GroupDetails() {
                     <p className="text-lg font-bold md:text-xl">Bills</p>
                   </div>
 
-                  <Link to="/scan">
+                  <Link to="/bill/add">
                     <Button className="bg-primary">
                       <Plus />
                       <p>Add Bill</p>

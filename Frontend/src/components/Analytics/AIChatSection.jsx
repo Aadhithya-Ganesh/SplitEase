@@ -1,17 +1,51 @@
 import { Send, Sparkles } from "lucide-react";
-import { useFetcher } from "react-router-dom";
 import useInput from "../../hooks/useInput";
 import Input from "../ui/Input";
 import Button from "../ui/Button";
+import { apiFetch } from "../../utils/Fetch";
+import { useState } from "react";
 
 function AIChatSection() {
-  const fetcher = useFetcher();
+  const [isLoading, setIsLoading] = useState(false);
+
   const {
     value: question,
     handleChange: handleQuestionChange,
     handleBlur: handleQuestionBlur,
     error: questionError,
   } = useInput("");
+
+  const [response, setResponse] = useState("");
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setResponse("");
+    setIsLoading(true);
+
+    try {
+      const res = await apiFetch("/api/analytics/ai-chat", {
+        method: "POST",
+        body: { question },
+      });
+
+      if (!res.body) throw new Error("No stream returned");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        setResponse((prev) => prev + chunk);
+      }
+    } catch (err) {
+      setResponse("Something went wrong.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="bg-card border-border rounded-lg border p-8">
@@ -20,9 +54,8 @@ function AIChatSection() {
         <h2 className="text-lg font-bold">AI Insights</h2>
       </div>
 
-      <fetcher.Form
-        method="post"
-        action={`/analytics/ai-chat`}
+      <form
+        onSubmit={handleSubmit}
         className="flex w-full items-center justify-between gap-10 space-y-6"
       >
         <div className="w-full">
@@ -37,21 +70,28 @@ function AIChatSection() {
             placeholder="Ask a question..."
           />
         </div>
-        <Button type="submit" className={"bg-primary py-4"}>
-          <Send className="size-4" />
+        <Button
+          type="submit"
+          className={`py-4 ${isLoading ? "bg-primary/30" : "bg-primary mt-3"}`}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <div className="border-primary-foreground h-4 w-4 animate-spin rounded-full border-2 border-t-transparent"></div>
+          ) : (
+            <Send className="size-4" />
+          )}
         </Button>
-      </fetcher.Form>
+      </form>
+      {(response || isLoading) && (
+        <div className="rounded-3xl bg-green-400 px-10 py-6">
+          <p className="mt-2 text-lg font-semibold">
+            {response}
+            {isLoading && <span className="animate-pulse">▍</span>}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
 
 export default AIChatSection;
-
-export async function action({ request }) {
-  const data = await request.formData();
-  const question = data.get("question");
-
-  console.log("Question asked:", question);
-
-  return question;
-}

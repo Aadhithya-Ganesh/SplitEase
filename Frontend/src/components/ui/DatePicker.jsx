@@ -76,7 +76,7 @@ function DatePicker({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="border-border bg-background absolute z-50 mt-2 w-full rounded-lg border p-4 shadow-lg"
+            className="border-border bg-background absolute -top-100 z-50 mt-2 w-full rounded-lg border p-4 shadow-lg"
           >
             {/* Month Controls */}
             <div className="text-foreground mb-10 flex items-center justify-between">
@@ -104,8 +104,8 @@ function DatePicker({
 
             {/* Weekdays */}
             <div className="text-muted-foreground mb-5 grid grid-cols-7 gap-6 text-center text-xs font-bold">
-              {["S", "M", "T", "W", "T", "F", "S"].map((d) => (
-                <span key={d}>{d}</span>
+              {["S", "M", "T", "W", "T", "F", "S"].map((d, index) => (
+                <span key={index}>{d}</span>
               ))}
             </div>
 
