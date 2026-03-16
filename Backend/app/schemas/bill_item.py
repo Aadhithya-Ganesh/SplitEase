@@ -54,3 +54,5 @@ class BillReviewResponse(BaseModel):
     paid_by: PaidByResponse
     items: list[BillItemReviewResponse]
     members: list[BillMemberReviewResponse]
+    total_amount: float
+    isScanned: bool

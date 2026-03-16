@@ -17,7 +17,14 @@ function GroupDetails() {
     <Suspense fallback={<BackdropLoader />}>
       <Await resolve={groupDetails}>
         {(data) => {
-          const { name, members_count, bills_count, balance, bills } = data;
+          const {
+            name,
+            members_count,
+            bills_count,
+            balance,
+            bills,
+            created_by,
+          } = data;
 
           return (
             <motion.div
@@ -30,6 +37,7 @@ function GroupDetails() {
                 members={members_count}
                 bill={bills_count}
                 balance={balance}
+                created_by={created_by}
               />
 
               <section>

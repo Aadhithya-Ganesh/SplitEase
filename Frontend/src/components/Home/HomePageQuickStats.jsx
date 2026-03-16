@@ -7,19 +7,15 @@ function HomePageQuickStats({ stats }) {
       <div className="mt-5 flex flex-col gap-3 text-lg">
         <div className="bg-secondary/30 flex justify-between rounded-xl p-3 font-bold">
           <p className="text-muted-foreground">Total groups</p>
-          <p className="text-foreground">{stats.groups}</p>
+          <p className="text-foreground">{stats.total_groups}</p>
         </div>
         <div className="bg-secondary/30 flex justify-between rounded-xl p-3 font-bold">
           <p className="text-muted-foreground">Total Bills</p>
-          <p className="text-foreground">{stats.bills}</p>
+          <p className="text-foreground">{stats.total_bills}</p>
         </div>
         <div className="bg-secondary/30 flex justify-between rounded-xl p-3 font-bold">
           <p className="text-muted-foreground">Total Spent (All Groups)</p>
-          <p className="text-foreground"> {stats.spent}</p>
-        </div>
-        <div className="bg-secondary/30 flex justify-between rounded-xl p-3 font-bold">
-          <p className="text-muted-foreground">Most Active Group</p>
-          <p className="text-foreground">{stats.active}</p>
+          <p className="text-foreground"> {stats.total_spent}</p>
         </div>
       </div>
     </div>

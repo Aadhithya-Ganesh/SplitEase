@@ -59,7 +59,11 @@ function BillSplit() {
             );
 
             return (
-              <>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col gap-5"
+              >
                 <div className="flex justify-between">
                   <div className="flex items-center gap-3 font-bold">
                     <Divide className="text-primary size-5 md:size-8" />
@@ -145,12 +149,16 @@ function BillSplit() {
                       </motion.ul>
 
                       <div>
-                        <BillSplitSummary items={items} users={data.members} />
+                        <BillSplitSummary
+                          items={items}
+                          users={data.members}
+                          total={data.total_amount}
+                        />
                       </div>
                     </motion.div>
                   </AnimatePresence>
                 </div>
-              </>
+              </motion.div>
             );
           }}
         </Await>

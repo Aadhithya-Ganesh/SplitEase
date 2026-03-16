@@ -6,19 +6,20 @@ import {
   Await,
   useParams,
   useNavigate,
+  useOutletContext,
 } from "react-router-dom";
 import BillDetailsSplitSummary from "../components/Bill/BillDetailsSplitSummary";
 import BillDetailsItemsList from "../components/Bill/BillDetailsItemList";
-import { Suspense, useContext, useState } from "react";
+import { Suspense, useState } from "react";
 import BackdropLoader from "../utils/BackdropLoader";
-import { UserContext } from "../context/UserContext";
 import { apiFetch } from "../utils/Fetch";
 import { toast } from "sonner";
 import Modal from "../components/ui/Modal";
 import UpdateBill from "../components/UpdateBill";
+import { motion } from "motion/react";
 
 function BillDetails() {
-  const { user } = useContext(UserContext);
+  const { user } = useOutletContext();
   const { groupId, billId } = useParams();
   const { billDetails } = useLoaderData();
 
@@ -62,27 +63,35 @@ function BillDetails() {
             );
 
             return (
-              <>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col gap-5"
+              >
                 <div className="my-6">
                   <div className="text-foreground flex items-center justify-between">
                     <div className="flex gap-4">
                       <p className="text-2xl font-bold md:text-4xl">
                         {resolvedBills.title}
                       </p>
-                      <button
-                        onClick={() => setUpdateBillModal(true)}
-                        className="hover:bg-accent text-muted-foreground hover:text-foreground rounded-lg p-2 transition"
-                        title="Edit bill"
-                      >
-                        <Pencil size={16} />
-                      </button>
-                      <button
-                        className="hover:bg-destructive/10 text-destructive rounded-lg p-2 transition"
-                        title="Delete bill"
-                        onClick={handleDelete}
-                      >
-                        <Trash size={16} />
-                      </button>
+                      {user.id === resolvedBills.paid_by.id && (
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => setUpdateBillModal(true)}
+                            className="hover:bg-accent text-muted-foreground hover:text-foreground rounded-lg px-3 py-2 transition"
+                            title="Edit bill"
+                          >
+                            <Pencil size={16} />
+                          </button>
+                          <button
+                            className="hover:bg-destructive/10 text-destructive py-2transition rounded-lg px-3"
+                            title="Delete bill"
+                            onClick={handleDelete}
+                          >
+                            <Trash size={16} />
+                          </button>
+                        </div>
+                      )}
                     </div>
                     <div className="text-right font-semibold md:text-xl">
                       <p className="text-muted-foreground">Paid by</p>
@@ -105,11 +114,22 @@ function BillDetails() {
                   payee={resolvedBills.paid_by}
                 />
 
-                <BillDetailsItemsList
-                  items={itemsList}
-                  members={membersList}
-                  setItemsList={setItemsList}
-                />
+                {resolvedBills.isScanned && (
+                  <BillDetailsItemsList
+                    items={itemsList}
+                    members={membersList}
+                    setItemsList={setItemsList}
+                  />
+                )}
+
+                <div className="bg-card border-border mt-5 flex justify-between rounded-xl border p-10">
+                  <p className="text-card-foreground text-3xl font-bold">
+                    Total
+                  </p>
+                  <p className="text-primary text-3xl font-bold">
+                    ${resolvedBills.total_amount.toFixed(2)}
+                  </p>
+                </div>
 
                 <div className="flex w-full items-center gap-7">
                   <Link
@@ -134,7 +154,7 @@ function BillDetails() {
                     onSuccess={updateBillOnSuccess}
                   />
                 </Modal>
-              </>
+              </motion.div>
             );
           }}
         </Await>

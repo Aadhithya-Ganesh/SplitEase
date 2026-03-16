@@ -39,6 +39,11 @@ function ScanBill() {
     cameraInputRef.current.click();
   };
 
+  const total = items.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0,
+  );
+
   const handleFile = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -100,6 +105,8 @@ function ScanBill() {
           split_mode: "equal",
           participants: [],
         })),
+        total: total,
+        isScanned: true,
       };
 
       const response = await apiFetch("/api/bills", {
@@ -250,6 +257,14 @@ function ScanBill() {
                   </div>
                 </div>
                 <BillDetailsItemList items={items} setItemsList={setItems} />
+                <div className="bg-card border-border mt-5 flex justify-between rounded-xl border p-10">
+                  <p className="text-card-foreground text-3xl font-bold">
+                    Total
+                  </p>
+                  <p className="text-primary text-3xl font-bold">
+                    ${total.toFixed(2)}
+                  </p>
+                </div>
                 <div className="mt-5 flex w-full items-center gap-7">
                   <Link className="w-full" to={"/home"}>
                     <Button className="bg-background hover:bg-accent w-full py-4">

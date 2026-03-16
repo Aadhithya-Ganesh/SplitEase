@@ -1,16 +1,16 @@
+import { toast } from "sonner";
+import { redirect } from "react-router-dom";
+
 export async function apiFetch(route, options = {}) {
   const baseUrl = `http://localhost:8080${route}`;
   const token = localStorage.getItem("token");
 
   const { params, ...fetchOptions } = options;
 
-  // Build URL with query params
   let url = baseUrl;
   if (params && typeof params === "object") {
     const query = new URLSearchParams(params).toString();
-    if (query) {
-      url += `?${query}`;
-    }
+    if (query) url += `?${query}`;
   }
 
   const headers = {
@@ -33,6 +33,13 @@ export async function apiFetch(route, options = {}) {
     headers,
     body: isJsonBody ? JSON.stringify(fetchOptions.body) : fetchOptions.body,
   });
+
+  // ⭐ handle expired token
+  if (response.status === 401 && token) {
+    localStorage.removeItem("token");
+
+    throw redirect("/");
+  }
 
   if (!response.ok) {
     let errorBody = {};

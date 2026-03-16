@@ -3,13 +3,17 @@ import Input from "../components/ui/Input";
 import useInput from "../hooks/useInput";
 import Select from "../components/ui/Select";
 import DatePicker from "../components/ui/DatePicker";
-import { Await, Link, useLoaderData } from "react-router-dom";
+import { Await, Link, useLoaderData, useNavigate } from "react-router-dom";
 import { Suspense, useState } from "react";
 import BackdropLoader from "../utils/BackdropLoader";
 import Button from "../components/ui/Button";
+import { toast } from "sonner";
+import { apiFetch } from "./../utils/Fetch";
 
 function BillManual() {
   const { groups } = useLoaderData();
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const {
     value: billName,
@@ -39,11 +43,6 @@ function BillManual() {
       return;
     }
 
-    if (items.length === 0) {
-      toast.error("No items found");
-      return;
-    }
-
     try {
       setLoading(true);
 
@@ -53,13 +52,9 @@ function BillManual() {
         created_at: date
           ? new Date(date).toISOString()
           : new Date().toISOString(),
-        items: items.map((item) => ({
-          name: item.name,
-          amount: item.price,
-          quantity: item.quantity,
-          split_mode: "equal",
-          participants: [],
-        })),
+        total: parseFloat(totalAmount),
+        items: [],
+        isScanned: false,
       };
 
       const response = await apiFetch("/api/bills", {
@@ -75,6 +70,7 @@ function BillManual() {
       }
 
       toast.success("Bill created successfully");
+      console.log(group);
       return navigate("/groups/" + group);
     } catch (err) {
       toast.error("Failed to create bill");
@@ -164,6 +160,7 @@ function BillManual() {
                 </div>
               </div>
             </div>
+            {loading && <BackdropLoader />}
           </div>
         )}
       </Await>

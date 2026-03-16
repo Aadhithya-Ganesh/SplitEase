@@ -14,5 +14,10 @@ class AnalyticsResponse(BaseModel):
     monthly_spending: List[MonthlySpending]
 
 
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+
 class AIChatQuestion(BaseModel):
-    question: str
+    history: list[ChatMessage]

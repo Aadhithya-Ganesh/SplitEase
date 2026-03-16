@@ -32,8 +32,12 @@ async def create_bill(
     try:
         # ---------------- CALCULATE TOTAL ----------------
         total_amount = 0
-        for item in payload.items:
-            total_amount += item.amount * item.quantity
+
+        if not payload.isScanned:
+            total_amount = payload.total
+        else:
+            for item in payload.items:
+                total_amount += item.amount * item.quantity
 
         # ---------------- CREATE BILL ----------------
         bill = Bill(
@@ -41,6 +45,7 @@ async def create_bill(
             title=payload.title,
             total_amount=round(total_amount, 2),
             paid_by=user.id,
+            isScanned=payload.isScanned,
             created_at=payload.created_at,
         )
 
@@ -61,24 +66,35 @@ async def create_bill(
         split_percentage = 100 / len(members)
 
         # ---------------- CREATE ITEMS + SPLITS ----------------
-        for item in payload.items:
-            db_item = BillItem(
-                bill_id=bill.id,
-                name=item.name,
-                amount=item.amount,
-                quantity=item.quantity,
-                split_mode=item.split_mode,
-            )
+        if payload.isScanned:
+            for item in payload.items:
+                db_item = BillItem(
+                    bill_id=bill.id,
+                    name=item.name,
+                    amount=item.amount,
+                    quantity=item.quantity,
+                    split_mode=item.split_mode,
+                )
 
-            db.add(db_item)
-            db.flush()  # generate item.id
+                db.add(db_item)
+                db.flush()  # generate item.id
 
-            # create equal splits for each member
+                # create equal splits for each member
+                for member in members:
+                    db.add(
+                        BillSplit(
+                            bill_id=bill.id,
+                            item_id=db_item.id,
+                            user_id=member.id,
+                            percentage=split_percentage,
+                        )
+                    )
+        else:
             for member in members:
                 db.add(
                     BillSplit(
                         bill_id=bill.id,
-                        item_id=db_item.id,
+                        item_id=None,
                         user_id=member.id,
                         percentage=split_percentage,
                     )
@@ -161,11 +177,40 @@ async def get_bill_review(
             }
         )
 
+    if not items and splits:
+        manual_splits = [s for s in splits if s.item_id is None]
+        percentages = [float(s.percentage) for s in manual_splits]  # type: ignore
+
+        # check if all percentages are equal
+        split_mode = "equal" if len(set(percentages)) == 1 else "percentage"
+
+        items_payload.append(
+            {
+                "id": bill.id,
+                "name": "Total Bill",
+                "quantity": 1,
+                "price": float(bill.total_amount),  # type: ignore
+                "total": float(bill.total_amount),  # type: ignore
+                "split_mode": split_mode,
+                "participants": [
+                    {
+                        "user_id": str(s.user_id),
+                        "percentage": float(s.percentage),  # type: ignore
+                    }
+                    for s in manual_splits
+                ],
+            }
+        )
+
     # ---------------- MEMBER TOTALS ----------------
     member_totals: dict[UUID, float] = {}
 
     for s in splits:
-        item_total = item_totals.get(s.item_id, 0)  # type: ignore
+        if s.item_id is None:
+            item_total = float(bill.total_amount)  # type: ignore
+        else:
+            item_total = item_totals.get(s.item_id, 0)  # type: ignore
+
         share = item_total * (float(s.percentage) / 100)  # type: ignore
 
         member_totals[s.user_id] = member_totals.get(s.user_id, 0) + share  # type: ignore
@@ -203,12 +248,14 @@ async def get_bill_review(
     return {
         "id": str(bill.id),
         "title": bill.title,
+        "total_amount": bill.total_amount,
         "paid_by": {
             "id": str(bill.paid_by),
             "name": db.query(Users.fullname).filter(Users.id == bill.paid_by).scalar(),
         },
         "items": items_payload,
         "members": members_payload,
+        "isScanned": bill.isScanned,
     }
 
 
@@ -273,6 +320,38 @@ async def update_bill_splits(
         raise HTTPException(status_code=403, detail="Not allowed")
 
     # ---------------- PROCESS ITEMS ----------------
+    if not bill.isScanned:  # type: ignore
+        item = payload.items[0]
+
+        total = round(sum(p.percentage for p in item.participants), 2)
+        if total != 100:
+            raise HTTPException(
+                status_code=400,
+                detail="Percentages must total 100",
+            )
+
+        # delete old splits
+        db.execute(
+            delete(BillSplit).where(
+                BillSplit.bill_id == bill_id,
+                BillSplit.item_id.is_(None),
+            )
+        )
+
+        # insert new splits
+        for p in item.participants:
+            db.add(
+                BillSplit(
+                    bill_id=bill_id,
+                    item_id=None,
+                    user_id=p.user_id,
+                    percentage=p.percentage,
+                )
+            )
+
+        db.commit()
+        return {"status": "ok"}
+
     for item in payload.items:
         db_item = (
             db.query(BillItem)

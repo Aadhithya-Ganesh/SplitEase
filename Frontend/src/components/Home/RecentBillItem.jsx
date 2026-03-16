@@ -3,14 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "motion/react";
 
 function RecentBillItem({ bill }) {
-  const { title, date, status, amount, totalAmount, direction, icon } = bill;
-
-  const iconMap = {
-    receipt: Receipt,
-    check: CheckCircle,
-  };
-
-  const Icon = iconMap[icon] || Receipt;
+  const { title, created_at, total_amount, balance } = bill;
 
   const statusStyles = {
     owed: {
@@ -30,24 +23,31 @@ function RecentBillItem({ bill }) {
     },
   };
 
-  const styles = statusStyles[status];
+  const styles =
+    statusStyles[
+      balance > 0 ? "owed_to_you" : balance < 0 ? "owed" : "settled"
+    ];
 
   return (
     <motion.div whileHover={{ x: 10 }} whileTap={{ scale: 0.95 }}>
       <Link
-        to={`/bill/${bill.id}/review`}
+        to={`/groups/${bill.group_id}/bill/${bill.id}/review`}
         className="hover:bg-muted/40 flex cursor-pointer items-center justify-between rounded-lg px-5 py-3 transition"
       >
         {/* Left */}
         <div className="flex items-center gap-3">
           <div className={`rounded-xl p-3 ${styles.container}`}>
-            <Icon className="size-5 md:size-7" />
+            {balance === 0 ? (
+              <CheckCircle className="size-5" />
+            ) : (
+              <Receipt className="size-5" />
+            )}
           </div>
 
           <div>
             <p className="text-foreground font-semibold md:text-lg">{title}</p>
             <p className="text-muted-foreground text-sm md:text-base">
-              {new Date(date).toLocaleDateString("en-US", {
+              {new Date(created_at).toLocaleDateString("en-US", {
                 month: "short",
                 day: "2-digit",
                 year: "numeric",
@@ -58,19 +58,19 @@ function RecentBillItem({ bill }) {
 
         {/* Right */}
         <div className="text-right">
-          {status === "settled" ? (
+          {balance === 0 ? (
             <>
               <p className="text-foreground font-semibold md:text-lg">
-                All settled
+                Settled
               </p>
               <p className="text-muted-foreground text-sm md:text-base">
-                Total: ${totalAmount.toFixed(2)}
+                Total: ${total_amount.toFixed(2)}
               </p>
             </>
           ) : (
             <>
               <p className={`font-semibold ${styles.text} md:text-lg`}>
-                {direction === "outgoing" ? "-" : "+"}${amount.toFixed(2)}
+                {balance < 0 ? "-" : "+"}${Math.abs(balance).toFixed(2)}
               </p>
               <p className="text-muted-foreground text-sm md:text-base">
                 {styles.label}

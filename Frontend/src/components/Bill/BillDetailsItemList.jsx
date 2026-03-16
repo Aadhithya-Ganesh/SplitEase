@@ -107,11 +107,6 @@ function BillDetailsItemsList({ items, setItemsList, members = null }) {
     setNewItem("");
   }
 
-  const total = items.reduce(
-    (sum, item) => sum + item.quantity * item.price,
-    0,
-  );
-
   return (
     <>
       <div className="bg-card border-border rounded-xl border">
@@ -202,10 +197,6 @@ function BillDetailsItemsList({ items, setItemsList, members = null }) {
             <Plus size={15} />
           </Button>
         </div>
-      </div>
-      <div className="bg-card border-border mt-5 flex justify-between rounded-xl border p-10">
-        <p className="text-card-foreground text-3xl font-bold">Total</p>
-        <p className="text-primary text-3xl font-bold">${total.toFixed(2)}</p>
       </div>
     </>
   );

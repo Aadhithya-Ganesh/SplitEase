@@ -7,13 +7,11 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useOutletContext, useParams } from "react-router-dom";
 import { formatDate } from "./../../utils/FormatDate";
-import { UserContext } from "./../../context/UserContext";
-import { useContext } from "react";
 
 function GroupPageBillItem({ bill }) {
-  const { user } = useContext(UserContext);
+  const { user } = useOutletContext();
   const { groupId } = useParams();
 
   return (

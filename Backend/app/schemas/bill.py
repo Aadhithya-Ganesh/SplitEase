@@ -43,9 +43,11 @@ class BillItemCreate(BaseModel):
 
 class CreateBillRequest(BaseModel):
     group_id: UUID
+    total: float
     title: str
     created_at: datetime
     items: List[BillItemCreate]
+    isScanned: bool
 
 
 class UpdateBillRequest(BaseModel):

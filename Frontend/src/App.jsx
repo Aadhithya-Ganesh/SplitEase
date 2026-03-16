@@ -2,7 +2,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import LoginPage, { action as loginAction } from "./pages/LoginPage";
 import SignupPage, { action as signupAction } from "./pages/SignupPage";
-import HomePage from "./pages/HomePage";
+import HomePage, { loader as homePageAction } from "./pages/HomePage";
 import AnalyticsPage, {
   loader as analyticsLoader,
 } from "./pages/AnalyticsPage";
@@ -16,7 +16,6 @@ import NavbarLayout from "./pages/NavbarLayout";
 import { ThemeProvider } from "./context/ThemeContext";
 import RootPage from "./pages/RootPage";
 import { Toaster } from "sonner";
-import UserContextProvider from "./context/UserContext";
 import { action as joinGroupAction } from "./components/JoinGroup";
 import { action as createGroupAction } from "./components/CreateGroup";
 import { action as updateGroupAction } from "./components/UpdateGroup";
@@ -48,7 +47,7 @@ function App() {
               action: loginAction,
             },
             {
-              path: "Signup",
+              path: "signup",
               element: <SignupPage />,
               action: signupAction,
             },
@@ -61,6 +60,7 @@ function App() {
             {
               path: "home",
               element: <HomePage />,
+              loader: homePageAction,
             },
             {
               path: "analytics",
@@ -129,10 +129,8 @@ function App() {
 
   return (
     <ThemeProvider>
-      <UserContextProvider>
-        <RouterProvider router={router} />
-        <Toaster richColors position="top-right" />
-      </UserContextProvider>
+      <RouterProvider router={router} />
+      <Toaster richColors position="top-right" />
     </ThemeProvider>
   );
 }

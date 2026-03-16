@@ -7,6 +7,8 @@ import { useState } from "react";
 
 function AIChatSection() {
   const [isLoading, setIsLoading] = useState(false);
+  const [response, setResponse] = useState("");
+  const [history, setHistory] = useState([]);
 
   const {
     value: question,
@@ -15,17 +17,21 @@ function AIChatSection() {
     error: questionError,
   } = useInput("");
 
-  const [response, setResponse] = useState("");
-
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     setResponse("");
     setIsLoading(true);
+
+    const newHistory = [...history, { role: "user", content: question }];
+    setHistory(newHistory);
+
+    handleQuestionChange({ target: { value: "" } });
 
     try {
       const res = await apiFetch("/api/analytics/ai-chat", {
         method: "POST",
-        body: { question },
+        body: { history: newHistory.slice(-5) },
       });
 
       if (!res.body) throw new Error("No stream returned");
@@ -33,13 +39,22 @@ function AIChatSection() {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
 
+      let fullResponse = "";
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
         const chunk = decoder.decode(value);
+        fullResponse += chunk;
+
         setResponse((prev) => prev + chunk);
       }
+
+      setHistory((prev) => [
+        ...prev,
+        { role: "assistant", content: fullResponse },
+      ]);
     } catch (err) {
       setResponse("Something went wrong.");
     } finally {
@@ -70,6 +85,7 @@ function AIChatSection() {
             placeholder="Ask a question..."
           />
         </div>
+
         <Button
           type="submit"
           className={`py-4 ${isLoading ? "bg-primary/30" : "bg-primary mt-3"}`}
@@ -82,14 +98,37 @@ function AIChatSection() {
           )}
         </Button>
       </form>
-      {(response || isLoading) && (
-        <div className="rounded-3xl bg-green-400 px-10 py-6">
-          <p className="mt-2 text-lg font-semibold">
-            {response}
-            {isLoading && <span className="animate-pulse">▍</span>}
-          </p>
-        </div>
-      )}
+
+      <div className="mt-6 flex flex-col gap-4">
+        {history.map((msg, index) => (
+          <div
+            key={index}
+            className={`flex ${
+              msg.role === "user" ? "justify-end" : "justify-start"
+            }`}
+          >
+            <div
+              className={`max-w-[70%] rounded-2xl px-5 py-3 text-sm ${
+                msg.role === "user"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-foreground"
+              }`}
+            >
+              {msg.content}
+            </div>
+          </div>
+        ))}
+
+        {/* streaming AI response */}
+        {isLoading && (
+          <div className="flex justify-start">
+            <div className="bg-muted max-w-[70%] rounded-2xl px-5 py-3 text-sm">
+              {response}
+              <span className="animate-pulse">▍</span>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

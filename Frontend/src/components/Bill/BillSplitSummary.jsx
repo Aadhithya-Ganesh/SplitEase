@@ -5,7 +5,7 @@ import { apiFetch } from "../../utils/Fetch";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
-function BillSplitSummary({ items, users }) {
+function BillSplitSummary({ items, users, total }) {
   /**
    * Build per-user totals from itemized percentages
    */
@@ -39,11 +39,6 @@ function BillSplitSummary({ items, users }) {
 
     return Object.values(totals);
   }, [items, users]);
-
-  const grandTotal = useMemo(
-    () => summary.reduce((sum, u) => sum + u.amount, 0).toFixed(2),
-    [summary],
-  );
 
   async function handleSave() {
     const response = await apiFetch(`/api/bills/${billId}/splits/save`, {
@@ -91,7 +86,7 @@ function BillSplitSummary({ items, users }) {
 
       <div className="border-border flex items-center justify-between border-t pt-4">
         <p className="text-muted-foreground font-medium">Total</p>
-        <p className="text-primary text-lg font-bold">${grandTotal}</p>
+        <p className="text-primary text-lg font-bold">${total.toFixed(2)}</p>
       </div>
 
       <Button className="bg-primary mt-2 w-full" onClick={handleSave}>

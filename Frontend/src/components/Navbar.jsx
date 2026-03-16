@@ -3,17 +3,14 @@ import Logo from "./Logo.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
 import { ArrowRight, PlusIcon } from "lucide-react";
 import Button from "./ui/Button.jsx";
-import { useContext } from "react";
-import { UserContext } from "../context/UserContext.jsx";
 import Navigation from "./../components/Navigation.jsx";
-import { User, Settings, LogOut } from "lucide-react";
+import { User, LogOut } from "lucide-react";
 import { useState, useRef } from "react";
 import DropdownMenu from "./ui/DropdownMenu";
 import DropdownItem from "./ui/DropdownItem";
 
-function Navbar({ mode }) {
+function Navbar({ mode, user }) {
   const navigate = useNavigate();
-  const { user, setUser } = useContext(UserContext);
 
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const triggerRef = useRef(null);
@@ -90,16 +87,6 @@ function Navbar({ mode }) {
                   </div>
                 </div>
 
-                <div className="border-border border-t" />
-                <DropdownItem
-                  icon={Settings}
-                  label="Settings"
-                  onClick={() => {
-                    setUserMenuOpen(false);
-                    navigate("/settings");
-                  }}
-                />
-
                 <div className="border-border my-1 border-t" />
 
                 <DropdownItem
@@ -108,7 +95,6 @@ function Navbar({ mode }) {
                   danger
                   onClick={() => {
                     localStorage.removeItem("token");
-                    setUser(null);
                     setUserMenuOpen(false);
                     navigate("/");
                   }}

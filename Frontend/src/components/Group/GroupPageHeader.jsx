@@ -1,14 +1,15 @@
 import { Receipt, Users, Copy, Trash, Pencil } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import Modal from "../ui/Modal";
 import UpdateGroup from "./../UpdateGroup";
 import { useState } from "react";
 import { toast } from "sonner";
 import { apiFetch } from "../../utils/Fetch";
 
-function GroupPageHeader({ name, members, bill, balance }) {
+function GroupPageHeader({ name, members, bill, balance, created_by }) {
   const { groupId } = useParams();
   const navigate = useNavigate();
+  const { user } = useOutletContext();
 
   const [updateGroupModal, setUpdateGroupModal] = useState(false);
 
@@ -40,41 +41,43 @@ function GroupPageHeader({ name, members, bill, balance }) {
             {name}
           </p>
 
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setUpdateGroupModal(true)}
-              className="hover:bg-accent text-muted-foreground hover:text-foreground rounded-lg p-2 transition"
-              title="Edit group"
-            >
-              <Pencil size={16} />
-            </button>
+          {user.id === created_by && (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setUpdateGroupModal(true)}
+                className="hover:bg-accent text-muted-foreground hover:text-foreground rounded-lg p-2 transition"
+                title="Edit group"
+              >
+                <Pencil size={16} />
+              </button>
 
-            <button
-              onClick={() => navigator.clipboard.writeText(groupId)}
-              className="hover:bg-accent text-muted-foreground hover:text-foreground rounded-lg p-2 transition"
-              title="Copy group ID"
-            >
-              <Copy
-                size={16}
-                onClick={async () => {
-                  try {
-                    await navigator.clipboard.writeText(groupId);
-                    toast.success("Group ID copied!");
-                  } catch (err) {
-                    console.error("Failed to copy", err);
-                  }
-                }}
-              />
-            </button>
+              <button
+                onClick={() => navigator.clipboard.writeText(groupId)}
+                className="hover:bg-accent text-muted-foreground hover:text-foreground rounded-lg p-2 transition"
+                title="Copy group ID"
+              >
+                <Copy
+                  size={16}
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(groupId);
+                      toast.success("Group ID copied!");
+                    } catch (err) {
+                      console.error("Failed to copy", err);
+                    }
+                  }}
+                />
+              </button>
 
-            <button
-              className="hover:bg-destructive/10 text-destructive rounded-lg p-2 transition"
-              title="Delete group"
-              onClick={handleDelete}
-            >
-              <Trash size={16} />
-            </button>
-          </div>
+              <button
+                className="hover:bg-destructive/10 text-destructive rounded-lg p-2 transition"
+                title="Delete group"
+                onClick={handleDelete}
+              >
+                <Trash size={16} />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Meta */}

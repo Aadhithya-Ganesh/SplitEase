@@ -206,8 +206,8 @@ function BillSplitItems({ item, users, enabled, onUpdate }) {
           >
             <div className="p-5">
               {/* SPLIT MODE */}
-              <div className="mb-5 flex items-center gap-5">
-                <p className="text-muted-foreground text-sm">Split Mode</p>
+              <div className="mb-5 flex items-center gap-10">
+                <p className="text-muted-foreground w-20 text-sm">Split Mode</p>
                 <Select
                   value={splitMode}
                   onChange={setSplitMode}

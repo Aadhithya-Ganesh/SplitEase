@@ -1,12 +1,10 @@
 import { CircleCheck, Clock } from "lucide-react";
 import CustomCheckbox from "../ui/CustomCheckbox";
-import { useContext } from "react";
-import { UserContext } from "../../context/UserContext";
-import { useParams } from "react-router-dom";
+import { useOutletContext, useParams } from "react-router-dom";
 import { apiFetch } from "../../utils/Fetch";
 
 function BillDetailsMembersSplit({ members, setMembers, isUserPayee }) {
-  const { user } = useContext(UserContext);
+  const { user } = useOutletContext();
   const { billId } = useParams();
 
   async function toggleSettled(id) {
