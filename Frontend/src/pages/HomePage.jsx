@@ -1,48 +1,15 @@
 import HomePageQuickStats from "../components/Home/HomePageQuickStats.jsx";
 import HomePageRecentBills from "../components/Home/HomePageRecentBills.jsx";
 import HomepageSummary from "./../components/Home/HomePageSummary.jsx";
-
-const bills = [
-  {
-    id: "bill_001",
-    title: "Movie Night",
-    date: "2024-02-20",
-    status: "owed", // "owed" | "settled" | "owed_to_you"
-    amount: 23.33,
-    currency: "USD",
-    direction: "outgoing", // outgoing = you owe, incoming = they owe you
-    icon: "receipt", // semantic icon key
-  },
-  {
-    id: "bill_002",
-    title: "Monthly Groceries",
-    date: "2024-02-18",
-    status: "owed_to_you",
-    amount: 34.5,
-    currency: "USD",
-    direction: "outgoing",
-    icon: "receipt",
-  },
-  {
-    id: "bill_003",
-    title: "Dinner at Italian Place",
-    date: "2024-02-15",
-    status: "settled",
-    totalAmount: 77.0,
-    currency: "USD",
-    direction: "none",
-    icon: "check",
-  },
-];
-
-const stats = {
-  groups: 3,
-  bills: 3,
-  spent: 1789.5,
-  active: "Roommates",
-};
+import { apiFetch } from "../utils/Fetch.jsx";
+import { Await, useLoaderData } from "react-router-dom";
+import { Suspense } from "react";
+import BackdropLoader from "../utils/BackdropLoader.jsx";
+import { motion } from "motion/react";
 
 function HomePage() {
+  const { data } = useLoaderData();
+
   return (
     <section>
       <p className="text-foreground mb-2 text-2xl font-bold md:text-4xl">
@@ -51,15 +18,38 @@ function HomePage() {
       <p className="text-muted-foreground mb-4 md:text-lg">
         Here's your expense summary
       </p>
-      <div className="mt-10">
-        <HomepageSummary />
-        <div className="gap-5 lg:flex">
-          <HomePageRecentBills bills={bills} />
-          <HomePageQuickStats stats={stats} />
-        </div>
-      </div>
+      <Suspense fallback={<BackdropLoader />}>
+        <Await resolve={data}>
+          {(resolvedData) => (
+            <motion.div
+              className="mt-10"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <HomepageSummary
+                owed={resolvedData.you_are_owed}
+                owe={resolvedData.you_owe}
+                balance={resolvedData.net_balance}
+                settlements={resolvedData.pending_settlements}
+              />
+              <div className="gap-5 lg:flex">
+                <HomePageRecentBills bills={resolvedData.recent_bills} />
+                <HomePageQuickStats stats={resolvedData.quick_stats} />
+              </div>
+            </motion.div>
+          )}
+        </Await>
+      </Suspense>
     </section>
   );
 }
 
 export default HomePage;
+
+export async function loader() {
+  return {
+    data: apiFetch("/api/analytics/dashboard", { method: "GET" }).then((res) =>
+      res.json(),
+    ),
+  };
+}

@@ -7,7 +7,7 @@ import { useParams } from "react-router-dom";
 import { apiFetch } from "../../utils/Fetch";
 import { toast } from "sonner";
 
-function BillDetailsItemsList({ items, setItemsList, members }) {
+function BillDetailsItemsList({ items, setItemsList, members = null }) {
   const [newItem, setNewItem] = useState("");
   const { billId } = useParams();
   const updateTimers = useRef({});
@@ -87,34 +87,31 @@ function BillDetailsItemsList({ items, setItemsList, members }) {
 
     const data = await response.json();
 
-    const participants = buildEqualParticipants(members);
+    if (members) {
+      const participants = buildEqualParticipants(members);
 
-    setItemsList((prev) => [
-      ...prev,
-      {
-        id: data.id,
-        name: newItem,
-        quantity: 1,
-        price: 0,
-        total: 0,
-        participants,
-      },
-    ]);
+      setItemsList((prev) => [
+        ...prev,
+        {
+          id: data.id,
+          name: newItem,
+          quantity: 1,
+          price: 0,
+          total: 0,
+          participants,
+        },
+      ]);
+    }
 
     toast.success("Item added");
     setNewItem("");
   }
 
-  const total = items.reduce(
-    (sum, item) => sum + item.quantity * item.price,
-    0,
-  );
-
   return (
     <>
       <div className="bg-card border-border rounded-xl border">
         {/* HEADER */}
-        <div className="text-muted-foreground grid grid-cols-[auto_1fr_110px_140px_auto] items-center gap-4 p-5 font-semibold lg:grid-cols-[auto_1fr_160px_200px_auto]">
+        <div className="text-muted-foreground grid grid-cols-[auto_1fr_0px_150px_auto] items-center gap-4 p-5 font-semibold lg:grid-cols-[auto_1fr_160px_200px_auto]">
           <span />
           <p className="ml-6">Item</p>
           <p className="text-center">Qty</p>
@@ -128,13 +125,15 @@ function BillDetailsItemsList({ items, setItemsList, members }) {
             <Reorder.Item
               key={item.id}
               value={item}
-              className="text-foreground border-border grid grid-cols-[auto_1fr_110px_140px_auto] items-center gap-4 border-t p-5 text-sm lg:grid-cols-[auto_1fr_160px_200px_auto]"
+              className="text-foreground border-border grid grid-cols-[auto_1fr_80px_100px_auto] items-center gap-4 border-t p-5 text-sm md:grid-cols-[auto_1fr_160px_200px_auto]"
             >
               {/* DRAG */}
               <GripVertical className="text-muted-foreground cursor-grab" />
 
               {/* NAME */}
-              <p className="truncate text-lg font-medium">{item.name}</p>
+              <p className="truncate text-lg font-medium" title={item.name}>
+                {item.name}
+              </p>
 
               {/* QTY */}
               <Input
@@ -151,7 +150,7 @@ function BillDetailsItemsList({ items, setItemsList, members }) {
                     updateItem(item.id, { quantity: 1 });
                   }
                 }}
-                className="mt-0 h-10 text-center font-semibold"
+                className="mt-0 h-10 text-left font-semibold md:text-center"
               />
 
               {/* PRICE */}
@@ -169,7 +168,7 @@ function BillDetailsItemsList({ items, setItemsList, members }) {
                     updateItem(item.id, { price: 0 });
                   }
                 }}
-                className="mt-0 h-10 text-right font-semibold"
+                className="mt-0 h-10 text-left font-semibold md:text-right"
               />
 
               {/* DELETE */}
@@ -198,10 +197,6 @@ function BillDetailsItemsList({ items, setItemsList, members }) {
             <Plus size={15} />
           </Button>
         </div>
-      </div>
-      <div className="bg-card border-border flex justify-between rounded-xl border p-10">
-        <p className="text-card-foreground text-3xl font-bold">Total</p>
-        <p className="text-primary text-3xl font-bold">${total.toFixed(2)}</p>
       </div>
     </>
   );

@@ -114,21 +114,22 @@ export async function action({ request }) {
   formBody.append("username", username);
   formBody.append("password", password);
 
-  const response = await apiFetch("/auth/login", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: formBody,
-  });
+  try {
+    const response = await apiFetch("/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: formBody,
+    });
 
-  const tokenData = await response.json();
+    const tokenData = await response.json();
 
-  // store token
-  localStorage.setItem("token", tokenData.access_token);
-  window.location.href = "/home";
+    localStorage.setItem("token", tokenData.access_token);
 
-  toast.success("Login Successful");
+    toast.success("Login Successful");
 
-  return redirect("/home");
+    return redirect("/home");
+  } catch (err) {
+    toast.error("Invalid email or password");
+    return null;
+  }
 }

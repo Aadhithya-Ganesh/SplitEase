@@ -26,3 +26,29 @@ class BillResponse(BaseModel):
 class BillDetailResponse(BillResponse):
     items: List[BillItemResponse]
     splits: List[UserBillResponse]
+
+
+class ParticipantSplit(BaseModel):
+    user_id: UUID
+    percentage: float
+
+
+class BillItemCreate(BaseModel):
+    name: str
+    amount: float
+    quantity: int
+    split_mode: str
+    participants: List[ParticipantSplit]
+
+
+class CreateBillRequest(BaseModel):
+    group_id: UUID
+    total: float
+    title: str
+    created_at: datetime
+    items: List[BillItemCreate]
+    isScanned: bool
+
+
+class UpdateBillRequest(BaseModel):
+    title: str

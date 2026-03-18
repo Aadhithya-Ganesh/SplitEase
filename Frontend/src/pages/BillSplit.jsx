@@ -2,7 +2,7 @@ import { Await, Link, useLoaderData, useParams } from "react-router-dom";
 import Button from "../components/ui/Button";
 import { Divide, DollarSign, MoveLeft, Users } from "lucide-react";
 import Switch from "./../components/ui/Switch";
-import { Suspense, useState } from "react";
+import { Suspense, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import BillSplitItems from "../components/Bill/BillSplitItems";
 import BillSplitSummary from "../components/Bill/BillSplitSummary";
@@ -12,6 +12,31 @@ import BackdropLoader from "../utils/BackdropLoader";
 function BillSplit() {
   const { groupId, billId } = useParams();
   const { billDetails } = useLoaderData();
+  const previousItemsRef = useRef(null);
+
+  function applyGlobalEqualSplit(items, users) {
+    const count = users.length;
+    const base = Math.floor(100 / count);
+    const remainder = 100 - base * count;
+
+    return items.map((item) => {
+      let extra = remainder;
+
+      return {
+        ...item,
+        split_mode: "equal",
+        participants: users.map((u) => {
+          const add = extra > 0 ? 1 : 0;
+          if (extra > 0) extra--;
+
+          return {
+            user_id: u.id,
+            percentage: base + add,
+          };
+        }),
+      };
+    });
+  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -25,18 +50,20 @@ function BillSplit() {
       <Suspense fallback={<BackdropLoader />}>
         <Await resolve={billDetails}>
           {(data) => {
-            console.log(data);
             const [items, setItems] = useState(data.items);
-            const [enabled, setEnabled] = useState(() => {
-              return data.items.every(
-                (item) =>
-                  item.splitMode === "equal" &&
-                  item.participants.length === data.members.length,
-              );
-            });
+            const [enabled, setEnabled] = useState(() =>
+              data.items.every((item) => {
+                if (item.split_mode !== "equal") return false;
+                return item.participants.every((p) => p.percentage > 0);
+              }),
+            );
 
             return (
-              <>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col gap-5"
+              >
                 <div className="flex justify-between">
                   <div className="flex items-center gap-3 font-bold">
                     <Divide className="text-primary size-5 md:size-8" />
@@ -60,7 +87,26 @@ function BillSplit() {
                       All items split among all {data.members.length} members
                     </p>
                   </div>
-                  <Switch checked={enabled} onChange={setEnabled} size="md" />
+                  <Switch
+                    checked={enabled}
+                    size="md"
+                    onChange={(value) => {
+                      setEnabled(value);
+
+                      if (value) {
+                        // 🔒 SAVE current custom state
+                        previousItemsRef.current = items;
+
+                        // 🔄 APPLY global equal split
+                        setItems(applyGlobalEqualSplit(items, data.members));
+                      } else {
+                        // 🔁 RESTORE previous custom state
+                        if (previousItemsRef.current) {
+                          setItems(previousItemsRef.current);
+                        }
+                      }
+                    }}
+                  />
                 </div>
                 <div>
                   <AnimatePresence>
@@ -103,12 +149,16 @@ function BillSplit() {
                       </motion.ul>
 
                       <div>
-                        <BillSplitSummary items={items} users={data.members} />
+                        <BillSplitSummary
+                          items={items}
+                          users={data.members}
+                          total={data.total_amount}
+                        />
                       </div>
                     </motion.div>
                   </AnimatePresence>
                 </div>
-              </>
+              </motion.div>
             );
           }}
         </Await>

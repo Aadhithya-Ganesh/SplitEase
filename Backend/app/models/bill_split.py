@@ -1,3 +1,5 @@
+import uuid
+
 from app.database import Base
 from sqlalchemy import Column, ForeignKey, Numeric, CheckConstraint
 from sqlalchemy.dialects.postgresql import UUID
@@ -7,22 +9,24 @@ from sqlalchemy.orm import relationship
 class BillSplit(Base):
     __tablename__ = "bill_splits"
 
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
     bill_id = Column(
         UUID(as_uuid=True),
         ForeignKey("bills.id", ondelete="CASCADE"),
-        primary_key=True,
+        nullable=False,
     )
 
     item_id = Column(
         UUID(as_uuid=True),
         ForeignKey("bill_items.id", ondelete="CASCADE"),
-        primary_key=True,
+        nullable=True,  # important
     )
 
     user_id = Column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
-        primary_key=True,
+        nullable=False,
     )
 
     # percentage of THIS ITEM

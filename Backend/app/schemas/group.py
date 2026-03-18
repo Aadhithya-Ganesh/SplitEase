@@ -62,6 +62,11 @@ class GroupBillItem(BaseModel):
     user_balance: float
 
 
+class Owe(BaseModel):
+    user: str
+    amount: float
+
+
 class GroupDetailResponse(BaseModel):
     id: UUID
     name: str
@@ -69,3 +74,6 @@ class GroupDetailResponse(BaseModel):
     bills_count: int
     balance: float
     bills: List[GroupBillItem]
+    you_owe: List[Owe]
+    you_are_owed: List[Owe]
+    created_by: UUID

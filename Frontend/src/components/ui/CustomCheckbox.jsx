@@ -16,16 +16,24 @@ function CustomCheckbox({ checked, onChange, label }) {
       <motion.div
         initial={false}
         animate={{
-          backgroundColor: checked
-            ? "rgb(34 197 94)" // green-500
-            : "rgba(255,255,255,0.08)",
-          borderColor: checked ? "rgb(34 197 94)" : "rgba(255,255,255,0.2)",
+          "--check-bg": checked ? "var(--color-primary)" : "transparent",
+          "--check-border": checked
+            ? "var(--color-primary)"
+            : "var(--color-border)",
+        }}
+        style={{
+          backgroundColor: "var(--check-bg)",
+          borderColor: "var(--check-border)",
         }}
         className="flex h-6 w-6 items-center justify-center rounded-full border"
       >
         {checked && (
-          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
-            <CircleCheck size={16} className="text-black" />
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+          >
+            <CircleCheck size={16} className="text-primary-foreground" />
           </motion.div>
         )}
       </motion.div>

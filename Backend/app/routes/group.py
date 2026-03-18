@@ -29,7 +29,13 @@ router = APIRouter(prefix="/api/groups", tags=["groups"])
 
 def item_share_amount():
     return cast(
-        (BillItem.amount * BillItem.quantity) * BillSplit.percentage / 100,
+        case(
+            (
+                BillSplit.item_id.isnot(None),
+                (BillItem.amount * BillItem.quantity) * BillSplit.percentage / 100,
+            ),
+            else_=(Bill.total_amount * BillSplit.percentage / 100),
+        ),
         Numeric(10, 2),
     )
 
@@ -61,11 +67,19 @@ async def get_groups_of_user(
             Bill.group_id.label("group_id"),
             BillSplit.user_id.label("user_id"),
             func.sum(
-                BillItem.amount * BillItem.quantity * (BillSplit.percentage / 100)
+                case(
+                    (
+                        BillSplit.item_id.isnot(None),
+                        BillItem.amount
+                        * BillItem.quantity
+                        * (BillSplit.percentage / 100),
+                    ),
+                    else_=Bill.total_amount * (BillSplit.percentage / 100),
+                )
             ).label("user_share"),
         )
         .join(BillSplit, BillSplit.bill_id == Bill.id)
-        .join(BillItem, BillItem.id == BillSplit.item_id)
+        .outerjoin(BillItem, BillItem.id == BillSplit.item_id)
         .group_by(Bill.id, Bill.group_id, BillSplit.user_id)
         .subquery()
     )
@@ -81,14 +95,14 @@ async def get_groups_of_user(
                     # you paid → others unpaid → they owe you
                     (
                         (Bill.paid_by == user.id)
-                        & (BillPayment.is_paid == False)
+                        & (BillPayment.is_paid == False)  # type: ignore
                         & (user_bill_share_subq.c.user_id != user.id),
                         user_bill_share_subq.c.user_share,
                     ),
                     # someone else paid → you unpaid → you owe them
                     (
                         (Bill.paid_by != user.id)
-                        & (BillPayment.is_paid == False)
+                        & (BillPayment.is_paid == False)  # type: ignore
                         & (user_bill_share_subq.c.user_id == user.id),
                         -user_bill_share_subq.c.user_share,
                     ),
@@ -232,7 +246,7 @@ async def get_group_by_id(
         )
         .select_from(Bill)
         .join(BillSplit, BillSplit.bill_id == Bill.id)
-        .join(BillItem, BillItem.id == BillSplit.item_id)
+        .outerjoin(BillItem, BillItem.id == BillSplit.item_id)
         .outerjoin(
             BillPayment,
             (BillPayment.bill_id == Bill.id)
@@ -242,6 +256,49 @@ async def get_group_by_id(
         .scalar()
     )
 
+    share = item_share_amount()
+
+    debts = (
+        db.query(
+            Users.id,
+            Users.fullname,
+            func.coalesce(
+                func.sum(
+                    case(
+                        # you owe payer
+                        (
+                            (BillSplit.user_id == user.id)
+                            & (Bill.paid_by == Users.id)
+                            & (BillPayment.is_paid == False),
+                            -share,
+                        ),
+                        # they owe you
+                        (
+                            (Bill.paid_by == user.id)
+                            & (BillSplit.user_id == Users.id)
+                            & (BillPayment.is_paid == False),
+                            share,
+                        ),
+                        else_=0,
+                    )
+                ),
+                0,
+            ).label("amount"),
+        )
+        .select_from(Bill)
+        .join(BillSplit, BillSplit.bill_id == Bill.id)
+        .join(Users, Users.id != user.id)
+        .outerjoin(BillItem, BillItem.id == BillSplit.item_id)
+        .outerjoin(
+            BillPayment,
+            (BillPayment.bill_id == Bill.id)
+            & (BillPayment.user_id == BillSplit.user_id),
+        )
+        .filter(Bill.group_id == group_id)
+        .group_by(Users.id)
+        .all()
+    )
+
     bills = (
         db.query(
             Bill.id,
@@ -249,10 +306,7 @@ async def get_group_by_id(
             Bill.created_at,
             Users.fullname.label("paid_by"),
             # ✅ bill total (derived, no duplication)
-            func.coalesce(
-                func.sum(func.distinct(BillItem.amount * BillItem.quantity)),
-                0,
-            ).label("total_amount"),
+            Bill.total_amount.label("total_amount"),
             # ✅ pending users (bill-level)
             func.count(
                 func.distinct(
@@ -287,7 +341,7 @@ async def get_group_by_id(
         .select_from(Bill)
         .join(Users, Users.id == Bill.paid_by)
         .join(BillSplit, BillSplit.bill_id == Bill.id)
-        .join(BillItem, BillItem.id == BillSplit.item_id)
+        .outerjoin(BillItem, BillItem.id == BillSplit.item_id)
         .outerjoin(
             BillPayment,
             (BillPayment.bill_id == Bill.id)
@@ -298,12 +352,27 @@ async def get_group_by_id(
         .all()
     )
 
+    you_owe = []
+    you_are_owed = []
+
+    for d in debts:
+        amount = float(d.amount)
+
+        if amount < 0:
+            you_owe.append({"user": d.fullname, "amount": abs(amount)})
+
+        elif amount > 0:
+            you_are_owed.append({"user": d.fullname, "amount": amount})
+
     return {
         "id": group.id,
         "name": group.name,
+        "created_by": group.created_by,
         "members_count": members_count,
         "bills_count": bills_count,
         "balance": balance,
+        "you_owe": you_owe,
+        "you_are_owed": you_are_owed,
         "bills": bills,
     }
 

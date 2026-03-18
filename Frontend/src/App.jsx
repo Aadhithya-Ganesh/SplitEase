@@ -2,24 +2,28 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import LoginPage, { action as loginAction } from "./pages/LoginPage";
 import SignupPage, { action as signupAction } from "./pages/SignupPage";
-import HomePage from "./pages/HomePage";
-import AnalyticsPage from "./pages/AnalyticsPage";
+import HomePage, { loader as homePageAction } from "./pages/HomePage";
+import AnalyticsPage, {
+  loader as analyticsLoader,
+} from "./pages/AnalyticsPage";
 import SettingsPage from "./pages/SettingsPage";
 import GroupDetails, {
   loader as groupDetailsLoader,
 } from "./pages/GroupDetails";
 import BillDetails, { loader as billDetailsLoader } from "./pages/BillDetails";
-import ScanBill from "./pages/ScanBill";
+import ScanBill, { loader as scanLoader } from "./pages/ScanBill";
 import NavbarLayout from "./pages/NavbarLayout";
 import { ThemeProvider } from "./context/ThemeContext";
 import RootPage from "./pages/RootPage";
 import { Toaster } from "sonner";
-import UserContextProvider from "./context/UserContext";
 import { action as joinGroupAction } from "./components/JoinGroup";
 import { action as createGroupAction } from "./components/CreateGroup";
 import { action as updateGroupAction } from "./components/UpdateGroup";
+import { action as updateBillAction } from "./components/UpdateBill";
 import GroupPage, { loader as groupPageLoader } from "./pages/GroupPage";
 import BillSplit, { loader as billSplitLoader } from "./pages/BillSplit";
+import BillManual from "./pages/BillManual";
+import AddBill from "./pages/AddBill";
 import NotFound from "./pages/NotFound";
 import { authLoader, unAuthLoader } from "./pages/Auth";
 
@@ -43,7 +47,7 @@ function App() {
               action: loginAction,
             },
             {
-              path: "Signup",
+              path: "signup",
               element: <SignupPage />,
               action: signupAction,
             },
@@ -56,10 +60,12 @@ function App() {
             {
               path: "home",
               element: <HomePage />,
+              loader: homePageAction,
             },
             {
               path: "analytics",
               element: <AnalyticsPage />,
+              loader: analyticsLoader,
             },
             {
               path: "settings",
@@ -86,8 +92,18 @@ function App() {
               loader: billSplitLoader,
             },
             {
-              path: "scan",
+              path: "bill/manual",
+              element: <BillManual />,
+              loader: scanLoader,
+            },
+            {
+              path: "bill/add",
+              element: <AddBill />,
+            },
+            {
+              path: "bill/scan",
               element: <ScanBill />,
+              loader: scanLoader,
             },
           ],
         },
@@ -103,16 +119,18 @@ function App() {
           path: "groups/:groupId/update",
           action: updateGroupAction,
         },
+        {
+          path: "bills/:billId/update",
+          action: updateBillAction,
+        },
       ],
     },
   ]);
 
   return (
     <ThemeProvider>
-      <UserContextProvider>
-        <RouterProvider router={router} />
-        <Toaster richColors position="top-right" />
-      </UserContextProvider>
+      <RouterProvider router={router} />
+      <Toaster richColors position="top-right" />
     </ThemeProvider>
   );
 }

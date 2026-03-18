@@ -1,10 +1,10 @@
-import { useMemo, useContext } from "react";
+import { useMemo } from "react";
 import { User } from "lucide-react";
 import BillDetailsMembersSplit from "./BillDetailsMembersSplit";
-import { UserContext } from "../../context/UserContext";
+import { useOutletContext } from "react-router-dom";
 
 function BillDetailsSplitSummary({ items, members, payee, setMembersList }) {
-  const { user } = useContext(UserContext);
+  const { user } = useOutletContext();
 
   const isUserPayee = payee.id === user?.id;
 

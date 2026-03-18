@@ -12,6 +12,9 @@ function BillSplitItems({ item, users, enabled, onUpdate }) {
   // 🔒 local working copy
   const [participants, setParticipants] = useState([]);
 
+  /**
+   * INIT FROM ITEM
+   */
   useEffect(() => {
     setParticipants(
       item.participants.map((p) => ({
@@ -21,53 +24,118 @@ function BillSplitItems({ item, users, enabled, onUpdate }) {
     );
   }, [item.id]);
 
-  const selectedCount = useMemo(
-    () => participants.filter((p) => p.selected).length,
+  /**
+   * MEMOS
+   */
+  const selected = useMemo(
+    () => participants.filter((p) => p.selected),
     [participants],
   );
 
-  const perPerson = useMemo(() => {
-    if (selectedCount === 0) return 0;
-
-    if (splitMode === "equal") {
-      return item.total / selectedCount;
-    }
-
-    // percentage mode → average selected share
-    const selected = participants.filter((p) => p.selected);
-    const avgPercent =
-      selected.reduce((sum, p) => sum + p.percentage, 0) / selected.length;
-
-    return (item.total * avgPercent) / 100;
-  }, [splitMode, participants, item.total, selectedCount]);
+  const selectedCount = selected.length;
 
   const selectedIds = useMemo(
-    () =>
-      participants
-        .filter((p) => p.selected)
-        .map((p) => p.user_id)
-        .join(","),
-    [participants],
+    () => selected.map((p) => p.user_id).join(","),
+    [selected],
   );
 
   /**
-   * ⚖️ AUTO-DISTRIBUTE (ONLY if empty)
+   * 🚨 HARD RULE:
+   * Deselected users MUST have 0%
+   */
+  useEffect(() => {
+    setParticipants((prev) =>
+      prev.map((p) => (p.selected ? p : { ...p, percentage: 0 })),
+    );
+  }, [selectedIds]);
+
+  /**
+   * ⚖️ EQUAL SPLIT — WHOLE NUMBERS ONLY
+   */
+  useEffect(() => {
+    if (splitMode !== "equal") return;
+    if (!selectedCount) return;
+
+    const base = Math.floor(100 / selectedCount);
+    const remainder = 100 - base * selectedCount;
+
+    setParticipants((prev) => {
+      let extra = remainder;
+
+      return prev.map((p) => {
+        if (!p.selected) return p;
+
+        const add = extra > 0 ? 1 : 0;
+        if (extra > 0) extra--;
+
+        return {
+          ...p,
+          percentage: base + add,
+        };
+      });
+    });
+  }, [splitMode, selectedIds, selectedCount]);
+
+  /**
+   * ⚖️ PERCENTAGE MODE — RECALCULATE ON SELECT / DESELECT
    */
   useEffect(() => {
     if (splitMode !== "percentage") return;
+    if (!selectedCount) return;
 
-    const selected = participants.filter((p) => p.selected);
-    if (!selected.length) return;
+    const selectedTotal = selected.reduce((sum, p) => sum + p.percentage, 0);
 
-    const total = selected.reduce((sum, p) => sum + p.percentage, 0);
-    if (total > 0) return; // 👈 don't override user edits
+    const hasZeroSelected = selected.some((p) => p.percentage === 0);
 
-    const equal = +(100 / selected.length).toFixed(2);
+    // 🔁 CASE 1: newly selected user OR all zeros → equal split
+    if (selectedTotal === 0 || hasZeroSelected) {
+      const base = Math.floor(100 / selectedCount);
+      const remainder = 100 - base * selectedCount;
+
+      setParticipants((prev) => {
+        let extra = remainder;
+
+        return prev.map((p) => {
+          if (!p.selected) return p;
+
+          const add = extra > 0 ? 1 : 0;
+          if (extra > 0) extra--;
+
+          return {
+            ...p,
+            percentage: base + add,
+          };
+        });
+      });
+
+      return;
+    }
+
+    // 🔁 CASE 2: proportional redistribution
+    let used = 0;
+
+    const redistributed = selected.map((p, idx) => {
+      if (idx === selected.length - 1) {
+        return {
+          ...p,
+          percentage: 100 - used,
+        };
+      }
+
+      const value = Math.floor((p.percentage / selectedTotal) * 100);
+      used += value;
+
+      return {
+        ...p,
+        percentage: value,
+      };
+    });
 
     setParticipants((prev) =>
-      prev.map((p) =>
-        p.selected ? { ...p, percentage: equal } : { ...p, percentage: 0 },
-      ),
+      prev.map((p) => {
+        const updated = redistributed.find((r) => r.user_id === p.user_id);
+        return updated ?? p;
+      }),
     );
   }, [splitMode, selectedIds]);
 
@@ -85,7 +153,6 @@ function BillSplitItems({ item, users, enabled, onUpdate }) {
 
   useEffect(() => {
     const serialized = JSON.stringify(payload);
-
     if (lastPayload.current === serialized) return;
 
     lastPayload.current = serialized;
@@ -104,15 +171,14 @@ function BillSplitItems({ item, users, enabled, onUpdate }) {
         <div>
           <p className="text-card-foreground text-lg font-bold">{item.name}</p>
           <p className="text-muted-foreground text-sm">
-            ${item.price.toFixed(2)} × {item.quantity} = $
-            {item.total.toFixed(2)}
+            ${item.price.toFixed(2)} × {item.quantity}
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <div className="text-right">
-            <p className="text-muted-foreground text-xs">Per person</p>
-            <p className="text-primary font-bold">${perPerson.toFixed(2)}</p>
+            <p className="text-muted-foreground text-xs">Total</p>
+            <p className="text-primary font-bold">${item.total.toFixed(2)}</p>
           </div>
 
           {!enabled && (
@@ -140,8 +206,8 @@ function BillSplitItems({ item, users, enabled, onUpdate }) {
           >
             <div className="p-5">
               {/* SPLIT MODE */}
-              <div className="mb-5 flex items-center gap-5">
-                <p className="text-muted-foreground text-sm">Split Mode</p>
+              <div className="mb-5 flex items-center gap-10">
+                <p className="text-muted-foreground w-20 text-sm">Split Mode</p>
                 <Select
                   value={splitMode}
                   onChange={setSplitMode}

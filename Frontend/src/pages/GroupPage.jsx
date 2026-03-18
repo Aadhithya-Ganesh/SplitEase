@@ -1,4 +1,4 @@
-import { Await, useLoaderData } from "react-router-dom";
+import { Await, useLoaderData, useOutletContext } from "react-router-dom";
 import Button from "../components/ui/Button";
 import {
   ChevronRight,
@@ -9,7 +9,7 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
-import { Suspense, useContext, useState } from "react";
+import { Suspense, useState } from "react";
 import Modal from "../components/ui/Modal";
 import JoinGroup from "../components/JoinGroup";
 import CreateGroup from "../components/CreateGroup";
@@ -18,11 +18,10 @@ import { Link } from "react-router-dom";
 import { apiFetch } from "./../utils/Fetch";
 import BackdropLoader from "./../utils/BackdropLoader";
 import NothingYet from "../components/ui/NothingYet";
-import { UserContext } from "./../context/UserContext";
 
 function GroupPage() {
   const { groups } = useLoaderData();
-  const { user } = useContext(UserContext);
+  const { user } = useOutletContext();
 
   const [createGroupModal, setCreateGroupModal] = useState(false);
   const [joinGroupModal, setJoinGroupModal] = useState(false);

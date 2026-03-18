@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export default function useInput(initialValue, validationFn) {
+export default function useInput(initialValue, validationFn = null) {
   const [value, setValue] = useState(initialValue);
   const [isTouched, setIsTouched] = useState(false);
 
