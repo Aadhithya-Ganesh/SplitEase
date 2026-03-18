@@ -307,7 +307,7 @@ def get_dashboard_data(
         )
         .group_by(Bill.id)
         .order_by(Bill.created_at.desc())
-        .limit(5)
+        .limit(3)
         .all()
     )
 

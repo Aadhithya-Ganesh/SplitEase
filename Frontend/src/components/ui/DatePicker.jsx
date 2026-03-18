@@ -76,7 +76,7 @@ function DatePicker({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="border-border bg-background absolute -top-100 z-50 mt-2 w-full rounded-lg border p-4 shadow-lg"
+            className="border-border bg-background absolute -top-100 z-300 mt-2 w-full rounded-lg border p-4 shadow-lg"
           >
             {/* Month Controls */}
             <div className="text-foreground mb-10 flex items-center justify-between">

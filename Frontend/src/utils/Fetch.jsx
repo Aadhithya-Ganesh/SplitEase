@@ -1,8 +1,7 @@
-import { toast } from "sonner";
 import { redirect } from "react-router-dom";
 
 export async function apiFetch(route, options = {}) {
-  const baseUrl = `http://localhost:8080${route}`;
+  const baseUrl = `http://${import.meta.env.VITE_BACKEND_HOST}:${import.meta.env.VITE_BACKEND_PORT}${route}`;
   const token = localStorage.getItem("token");
 
   const { params, ...fetchOptions } = options;
