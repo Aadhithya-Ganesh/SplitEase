@@ -1,26 +1,29 @@
 # SplitEase 🧾💸
 
-SplitEase is a modern bill-splitting and expense management application designed to make sharing expenses with friends, roommates, and groups effortless and transparent.
+SplitEase is an intelligent expense management platform that simplifies how groups track, split, and settle shared costs. Designed for real-world scenarios like trips, roommates, and group spending, it combines automated expense tracking with clear balance calculations to eliminate confusion.
 
-Track shared bills, see who owes what, settle balances, and stay organized — without the headache.
+With features like smart bill splitting, real-time balance updates, and seamless settlement tracking, SplitEase ensures everyone knows exactly who owes what — making shared finances transparent, accurate, and stress-free.
 
-> 🚧 **This project is currently in active development.**  
-> Features, APIs, and documentation are evolving.
+## 📋 Table of Contents
 
----
+- [✨ Features](#-features)
+- [🛠️ Tech Stack](#-tech-stack)
+- [🧠 Architecture Overview](#-architecture-overview)
+- [🚀 Getting Started](#-getting-started)
+- [🤝 Contributing](#-contributing)
+- [📝 License](#-license)
+- [📧 Contact](#-contact)
 
-## ✨ Features (Planned & In Progress)
+## ✨ Features
 
 - 👥 User authentication & secure sessions
 - 📂 Group-based expense tracking
-- 🧾 Add, split, and manage bills
+- 🧾 Add (Manually or Scanned), split, and manage bills
 - 💸 Automatic balance calculation (who owes whom)
 - ✅ Settle expenses and track payment history
 - 📊 Analytics & spending insights
 - 🌗 Light / Dark mode support
 - 📱 Responsive, modern UI
-
----
 
 ## 🛠️ Tech Stack
 
@@ -48,52 +51,88 @@ Track shared bills, see who owes what, settle balances, and stay organized — w
 - **NGINX**
 - **Git & GitHub**
 
----
+### Deployments
+
+- **Docker**
+- **Kubernetes**
+
+### AI Tools
+
+- **OpenAI**
+- **Llamaparse**
 
 ## 🧠 Architecture Overview
 
-- Stateless authentication using **JWT**
-- User context fetched via a `/me` endpoint on app load
-- No user data stored in localStorage (security-first)
-- Relational database schema optimized for:
+- Stateless authentication with **JWT**, ensuring scalable and decoupled session management
+- Centralized user context via /me endpoint, fetched on app initialization for consistent state hydration
+- Security-first design with no sensitive user data stored in localStorage
+- Normalized relational database schema modeling core entities:
   - Users
   - Groups
   - Bills
   - Participants
   - Settlements
-- Smooth page & layout animations using Framer Motion
-
----
+- Efficient data relationships enabling accurate balance computation and transaction tracking
+- Smooth, declarative UI transitions powered by Framer Motion for enhanced user experience
 
 ## 🚀 Getting Started
 
-> ⚠️ This section will be completed once development stabilizes.
+### ✅ Prerequisites
 
-### Prerequisites
+Ensure you have Docker installed before proceeding. You can download it here:
 
-- Node.js
-- PostgreSQL
-- Package manager (npm / pnpm / yarn)
-- Docker
+🔗 [Docker install Guide](https://www.docker.com/get-started/)
 
 ### Installation
 
-#### Backend
+#### 1. Github
 
 ```bash
-cd Backend
+git clone https://github.com/Aadhithya-Ganesh/SplitEase.git
 ```
+
+```bash
+cd SplitEase
+```
+
+#### 2. Run the application
 
 ```bash
 docker compose up --build
 ```
 
-#### Frontend
+### Visit the website at "localhost"
 
-```bash
-cd Frontend
-```
+## 🤝 Contributing
 
-```bash
-npm run dev
-```
+We welcome contributions! 🎉 To contribute, follow these steps:
+
+1. **Fork the repository.**
+2. **Create a new branch:**
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+3. **Commit your changes:**
+   ```bash
+   git commit -m "Add your awesome feature"
+   ```
+4. **Push to the branch:**
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+5. **Open a pull request.** 🚀
+
+## 📝 License
+
+This project is licensed under the **MIT License**. See the [LICENSE](LICENSE.txt) file for details. 🐜
+
+---
+
+## 📧 Contact
+
+For questions or feedback, feel free to reach out:
+
+- **Email**: aadhithyag2000@gmail.com 📩
+- **GitHub Issues**: [Open an Issue](https://github.com/Aadhithya-Ganesh/SplitEase/issues) 🐛
+
+---
